@@ -192,8 +192,20 @@ window.addEventListener("DOMContentLoaded", async () => {
   $("#btn-modo-dias").onclick = () => { MODO_HORAS=false; $("#modal-modo").classList.remove("show"); $("#form-dias").classList.remove("hide"); };
   $("#btn-modo-horas").onclick = () => { MODO_HORAS=true;  $("#modal-modo").classList.remove("show"); $("#form-horas").classList.remove("hide"); };
   $("#btn-acerca").onclick = () => {
-    alert("Sueldo Vigilador (web).\nCálculo aproximado según prácticas del sector.\ Desarrollado por Sebastián Sanavera.");
-  };
+    alert(
+  "Sueldo Vigilador (versión web)\n" +
+  "Adaptado desde la aplicación Android original.\n" +
+  "Permite calcular el sueldo de un vigilador con opciones avanzadas:\n" +
+  "- Horas normales y extras (50% y 100%)\n" +
+  "- Horas nocturnas y adicionales\n" +
+  "- Plus remunerativo y no remunerativo\n" +
+  "- Cálculo por días o por horas trabajadas\n" +
+  "\n" +
+  "Desarrollado por Sebastián Sanavera\n" +
+  "Código libre y disponible en GitHub.\n" +
+  "Si querés el código para verlo, editarlo o aprender, escribime:\n" +
+  "Tel: 11 3947 6360"
+);  };
 
   // “Nuevo cálculo”
   $("#btn-nuevo").onclick = () => location.reload();
