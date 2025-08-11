@@ -110,3 +110,7 @@ body{
   .grid{grid-template-columns:1fr}
   .content{padding-bottom:140px}
 }
+#modal-opciones .modal-card {
+  max-height: 90vh;       /* altura máxima visible */
+  overflow-y: auto;       /* scroll vertical */
+}
