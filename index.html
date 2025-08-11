@@ -164,39 +164,82 @@
     </div>
 
     <!-- MODAL Opciones avanzadas -->
-    <div class="modal" id="modal-opciones">
-      <div class="modal-card">
-        <h2>Opciones avanzadas</h2>
-        <div class="grid">
-          <label class="field">
-            <span>Horas extras desde</span>
-            <select id="horasExtrasDesde">
-              <option value="192">192</option>
-              <option value="200">200</option>
-              <option value="208" selected>208</option>
-            </select>
-          </label>
+<!-- MODAL: OPCIONES AVANZADAS -->
+<div id="modal-opciones" class="modal" aria-hidden="true">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="opcavz-title">
+    <h2 id="opcavz-title">Opciones avanzadas</h2>
 
-          <label class="field"><span>Hora normal</span><input id="vHora" type="number" step="0.01"></label>
-          <label class="field"><span>Hora extra 50%</span><input id="vHora50" type="number" step="0.01"></label>
-          <label class="field"><span>Hora extra 100%</span><input id="vHora100" type="number" step="0.01"></label>
-          <label class="field"><span>Hora nocturna (adicional)</span><input id="vHoraNoc" type="number" step="0.01"></label>
-          <label class="field"><span>Plus adicional</span><input id="plusAdi" type="number" step="0.01"></label>
-          <label class="field"><span>Plus no remunerativo</span><input id="plusNR" type="number" step="0.01"></label>
-          <label class="field"><span>Horas extra por jornada</span><input id="extraJornada" type="number" step="1"></label>
-          <label class="field"><span>Sueldo básico</span><input id="sBasico" type="number" step="0.01"></label>
-          <label class="field"><span>Presentismo</span><input id="presentismo" type="number" step="0.01"></label>
-          <label class="field"><span>Viáticos</span><input id="viaticos" type="number" step="0.01"></label>
-          <label class="field"><span>Horas nocturnas x día</span><input id="horasNocXD" type="number" step="1"></label>
-        </div>
-        <div class="modal-actions">
-          <button id="btn-reset" class="btn btn-ghost">Restablecer</button>
-          <div class="spacer"></div>
-          <button id="btn-cancelar-opc" class="btn">Cancelar</button>
-          <button id="btn-guardar-opc" class="btn btn-brand">Guardar</button>
-        </div>
+    <div class="grid">
+      <!-- 1) fila completa -->
+      <div class="field">
+        <span>Horas extras desde</span>
+        <!-- mantené este select si ya tenés las opciones en JS -->
+        <select id="horasExtrasDesde">
+          <option value="192">192</option>
+          <option value="200">200</option>
+          <option value="208" selected>208</option>
+        </select>
+      </div>
+
+      <!-- 2 columnas por fila desde acá -->
+      <div class="field">
+        <span>Hora normal</span>
+        <input id="horaNormal" type="number" step="0.01" inputmode="decimal" placeholder="0">
+      </div>
+
+      <div class="field">
+        <span>Hora extra 50%</span>
+        <input id="horaExtra50" type="number" step="0.01" inputmode="decimal" placeholder="0">
+      </div>
+
+      <div class="field">
+        <span>Hora extra 100%</span>
+        <input id="horaExtra100" type="number" step="0.01" inputmode="decimal" placeholder="0">
+      </div>
+
+      <div class="field">
+        <span>Hora nocturna (adicional)</span>
+        <input id="horaNocturna" type="number" step="0.01" inputmode="decimal" placeholder="0">
+      </div>
+
+      <div class="field">
+        <span>Plus adicional</span>
+        <input id="plusAdicional" type="number" step="0.01" inputmode="decimal" placeholder="0">
+      </div>
+
+      <div class="field">
+        <span>Plus no remunerativo</span>
+        <input id="plusNoRemunerativo" type="number" step="0.01" inputmode="decimal" placeholder="0">
+      </div>
+
+      <div class="field">
+        <span>Horas extra por jornada</span>
+        <input id="horasExtraJornada" type="number" step="1" inputmode="numeric" placeholder="0">
+      </div>
+
+      <div class="field">
+        <span>Sueldo básico</span>
+        <input id="sueldoBasico" type="number" step="0.01" inputmode="decimal" placeholder="0">
+      </div>
+
+      <div class="field">
+        <span>Presentismo</span>
+        <input id="presentismo" type="number" step="0.01" inputmode="decimal" placeholder="0">
+      </div>
+
+      <div class="field">
+        <span>Viáticos</span>
+        <input id="viaticos" type="number" step="0.01" inputmode="decimal" placeholder="0">
       </div>
     </div>
+
+    <div class="modal-actions">
+      <button class="btn ghost" id="btnCancelarOpciones">Cancelar</button>
+      <button class="btn danger" id="btnResetearOpciones">Restablecer</button>
+      <button class="btn primary" id="btnGuardarOpciones">Guardar</button>
+    </div>
+  </div>
+</div>
 
     <footer class="footer-text">Desarrollado por Sebastián Sanavera ®</footer>
   </div>
