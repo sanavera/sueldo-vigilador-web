@@ -110,3 +110,127 @@ body{
   .grid{grid-template-columns:1fr}
   .content{padding-bottom:140px}
 }
+
+/* ===== Modal genérico ===== */
+.modal{
+  position: fixed; inset: 0;
+  background: rgba(10,12,16,.6);
+  backdrop-filter: blur(6px);
+  display: none;                   /* .show -> display:flex */
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow: auto;                  /* por si la tarjeta supera la altura */
+  z-index: 1000;
+}
+.modal.show{ display: flex; }
+
+.modal-card{
+  width: 100%;
+  max-width: 720px;
+  background: var(--elev, #161821);
+  border: 1px solid var(--line, #2a2f3e);
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(0,0,0,.35);
+  padding: 14px 14px 10px;
+  max-height: min(92vh, 900px);
+  overflow: auto;                  /* scroll interno */
+  -webkit-overflow-scrolling: touch;
+}
+
+.modal-card h2{
+  margin: 4px 6px 12px;
+  font-size: 24px; font-weight: 700;
+  position: sticky; top: 0;
+  padding: 10px 6px 8px;
+  background: linear-gradient(180deg, rgba(22,24,33,1) 70%, rgba(22,24,33,.85));
+  z-index: 1;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+}
+
+/* ===== Grilla 2 columnas ===== */
+#modal-opciones .grid{
+  display: grid;
+  grid-template-columns: 1fr 1fr;   /* 2 por fila */
+  gap: 10px;
+  padding: 6px;
+}
+
+/* la primera .field ocupa el ancho completo */
+#modal-opciones .grid .field:first-child{
+  grid-column: 1 / -1;
+}
+
+.field{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field span{
+  font-size: 12px;
+  color: var(--muted, #aab0c0);
+  font-weight: 600;
+  letter-spacing: .02em;
+}
+
+.field input,
+.field select{
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--tile, #1b1e27);
+  color: var(--text, #f6f7fb);
+  border: 1px solid var(--line, #2a2f3e);
+  border-radius: 10px;
+  outline: none;
+  font-size: 14px;
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.field input::placeholder{ color: var(--muted, #aab0c0); opacity: .8; }
+.field input:focus,
+.field select:focus{
+  border-color: var(--brand, #5ee192);
+  box-shadow: 0 0 0 3px rgba(94,225,146,.15);
+  background: #1a1d26;
+}
+
+/* ===== Acciones pegadas abajo ===== */
+.modal-actions{
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding: 10px 6px 6px;
+  position: sticky; bottom: 0;
+  background: linear-gradient(180deg, rgba(22,24,33,.0), rgba(22,24,33,.95));
+}
+
+/* Botones base (heredan tu paleta) */
+.btn{
+  border: 1px solid var(--line, #2a2f3e);
+  background: var(--tile, #1b1e27);
+  color: var(--text, #f6f7fb);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform .12s ease, box-shadow .15s ease, background .15s ease;
+}
+.btn:hover{ transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,.25); }
+
+.btn.primary{ background: var(--brand, #5ee192); color: #0a1f0f; border-color: transparent; }
+.btn.primary:hover{ filter: brightness(1.02); }
+
+.btn.danger{ background: #e55353; border-color: #e55353; color: white; }
+.btn.ghost{ background: transparent; }
+
+/* ===== Responsive ===== */
+@media (max-width: 400px){
+  #modal-opciones .grid{
+    grid-template-columns: 1fr 1fr;   /* mantenemos 2 en celus chicos */
+    gap: 8px;
+  }
+  .modal-card{ padding: 12px; }
+  .modal-card h2{ font-size: 20px; }
+  .field input, .field select{ padding: 9px 10px; font-size: 13.5px; }
+}
