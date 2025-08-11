@@ -321,3 +321,56 @@ window.addEventListener("DOMContentLoaded", async () => {
     $("#bruto-horas").textContent = "Bruto: " + money(r.bruto);
   };
 });
+
+
+// ---- Bootstrap de modales y secciones (UI) ----
+document.addEventListener("DOMContentLoaded", () => {
+  const $ = (id) => document.getElementById(id);
+
+  const modalModo   = $("modal-modo");
+  const modalAcerca = $("modal-acerca");
+
+  const containerDias  = $("containerDias");
+  const containerHoras = $("containerHoras");
+
+  // helpers
+  const openModal  = (el) => el?.classList.add("show");
+  const closeModal = (el) => el?.classList.remove("show");
+  const showOnly   = (section) => {
+    containerDias.classList.add("hidden");
+    containerHoras.classList.add("hidden");
+    section.classList.remove("hidden");
+  };
+
+  // BOTONES DEL MODAL INICIAL
+  $("btnModoDias")?.addEventListener("click", () => {
+    showOnly(containerDias);
+    closeModal(modalModo);
+  });
+
+  $("btnModoHoras")?.addEventListener("click", () => {
+    showOnly(containerHoras);
+    closeModal(modalModo);
+  });
+
+  $("btnAcercaDeApp")?.addEventListener("click", () => {
+    openModal(modalAcerca);
+  });
+
+  // Cerrar “Acerca de”
+  $("btnCerrarAcerca")?.addEventListener("click", () => {
+    closeModal(modalAcerca);
+  });
+
+  // Botón “Nuevo cálculo” del header: vuelve a mostrar el modal de modo
+  $("btnNuevoCalculo")?.addEventListener("click", () => {
+    // limpiar resultados visibles si querés:
+    document.querySelectorAll(".results").forEach(e => e.classList.add("hidden"));
+    openModal(modalModo);
+  });
+
+  // Estado inicial: mostrar el modal de modo y ocultar secciones
+  openModal(modalModo);
+  containerDias.classList.add("hidden");
+  containerHoras.classList.add("hidden");
+});
