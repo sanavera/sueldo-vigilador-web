@@ -2,265 +2,203 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Sueldo Vigilador</title>
 
-  <!-- Colores barra Android / iOS -->
-  <meta name="theme-color" content="#161821" media="(prefers-color-scheme: light)" />
-  <meta name="theme-color" content="#161821" media="(prefers-color-scheme: dark)" />
-  <meta name="color-scheme" content="dark light" />
-  <link rel="icon" href="favicon.png"/>
+  <!-- Android barras oscuras -->
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#161821" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#161821" media="(prefers-color-scheme: dark)">
 
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="app">
-
-    <!-- HEADER -->
-    <header class="topbar">
-      <div class="brand">
-        <img src="logo.png" alt="Logo" class="brand-logo" />
-        <div class="brand-text">
+    <!-- MODAL de modo de cálculo -->
+    <div class="modal show" id="modal-modo">
+      <div class="modal-card">
+        <div class="brand">
+          <img src="https://raw.githubusercontent.com/primer/octicons/main/icons/shield-24.svg" alt="" />
           <h1>Sueldo <span>Vigilador</span></h1>
         </div>
-      </div>
-      <button id="btnNuevoCalculo" class="chip success">Nuevo cálculo</button>
-    </header>
-
-    <!-- SELECCIÓN DE MODO (modal inicial) -->
-    <div id="modal-modo" class="modal show" aria-hidden="false">
-      <div class="modal-card small" role="dialog" aria-modal="true" aria-labelledby="modo-title">
-        <h2 id="modo-title">¿Cómo querés calcular?</h2>
-        <p class="muted">Elegí la modalidad que usás para calcular tu sueldo.</p>
-        <div class="stack">
-          <button id="btnModoDias" class="btn primary">Por días trabajados</button>
-          <button id="btnModoHoras" class="btn info">Por horas trabajadas</button>
-          <button id="btnAcercaDeApp" class="btn ghost">Acerca de la App</button>
+        <p class="lead">¿Cómo querés calcular tu sueldo?</p>
+        <p class="sub">Elegí la modalidad que usás para calcularlo de forma más precisa.</p>
+        <div class="btn-col">
+          <button id="btn-modo-dias" class="btn btn-brand">Por días trabajados</button>
+          <button id="btn-modo-horas" class="btn btn-accent">Por horas trabajadas</button>
+          <button id="btn-acerca" class="btn btn-ghost">Acerca de la App</button>
         </div>
       </div>
     </div>
 
-    <!-- CONTENIDO -->
-    <main class="page">
+    <!-- CABECERA -->
+    <header class="header">
+      <div class="brand">
+        <img src="https://raw.githubusercontent.com/primer/octicons/main/icons/shield-24.svg" alt="" />
+        <h1>Sueldo <span>Vigilador</span></h1>
+      </div>
+      <button id="btn-nuevo" class="chip">Nuevo cálculo</button>
+    </header>
 
-      <!-- FORM: POR DÍAS -->
-      <section id="containerDias" class="card hidden">
-        <h2>Calcular por días</h2>
+    <!-- FORMULARIOS -->
+    <main class="content">
+      <!-- MODO DÍAS -->
+      <section id="form-dias" class="card hide">
+        <div class="grid">
+          <label class="field">
+            <span>Días trabajados</span>
+            <input id="diasTrabajados" type="number" min="0" inputmode="numeric" placeholder="Ej. 21" />
+          </label>
 
-        <div class="grid-2">
-          <div class="field">
-            <label for="edtDiasTrabajados">Días trabajados</label>
-            <input id="edtDiasTrabajados" type="number" inputmode="numeric" placeholder="0" />
-          </div>
-
-          <div class="field">
-            <label for="spHorasPorDia">Horas por día</label>
-            <select id="spHorasPorDia">
-              <option>12 horas</option>
-              <option>10 horas</option>
-              <option>8 horas</option>
+          <label class="field">
+            <span>▼ Horas por día</span>
+            <select id="horasPorDia">
+              <option value="12">12 horas</option>
+              <option value="10">10 horas</option>
+              <option value="8">8 horas</option>
             </select>
-          </div>
+          </label>
 
-          <div class="field">
-            <label for="edtDiasFeriados">Días feriados</label>
-            <input id="edtDiasFeriados" type="number" inputmode="numeric" placeholder="0" />
-          </div>
+          <label class="field">
+            <span>Días feriados</span>
+            <input id="diasFeriados" type="number" min="0" inputmode="numeric" placeholder="Ej. 1" />
+          </label>
 
-          <div class="field">
-            <label for="spFormaPagoFeriado">Feriado</label>
-            <select id="spFormaPagoFeriado">
-              <option>4h al 100% + 8h normal (12h)</option>
-              <option>12h al 100% (12h)</option>
-              <option>Pago completo al 100% (8/10h)</option>
+          <label class="field">
+            <span>▼ Pago feriado</span>
+            <select id="pagoFeriado">
+              <option value="0">4h al 100% + 8h normal (12h)</option>
+              <option value="1">12h al 100% (12h)</option>
+              <option value="2">Jornada completa al 100% (8/10h)</option>
             </select>
-          </div>
+          </label>
 
-          <div class="field">
-            <label for="edtAniosAntiguedad">Años de antigüedad</label>
-            <input id="edtAniosAntiguedad" type="number" inputmode="numeric" placeholder="0" />
-          </div>
+          <label class="field">
+            <span>Años de antigüedad</span>
+            <input id="aniosAnt" type="number" min="0" inputmode="numeric" placeholder="Ej. 1" />
+          </label>
 
-          <div class="field checkbox-col">
+          <div class="checks">
             <label class="check">
-              <input id="chkTurnoNoche" type="checkbox" />
+              <input id="turnoNocheDias" type="checkbox" />
               <span>Turno noche</span>
             </label>
             <label class="check">
-              <input id="chkAfiliadoSindicatoDias" type="checkbox" />
+              <input id="sindicatoDias" type="checkbox" />
               <span>Sindicato</span>
             </label>
           </div>
 
-          <!-- aparece sólo si turno noche -->
-          <div class="field hidden" id="wrapDiasNocturnosModoDias" style="grid-column:1/-1;">
-            <label for="edtDiasNocturnosModoDias">Días nocturnos</label>
-            <input id="edtDiasNocturnosModoDias" type="number" inputmode="numeric" placeholder="0" />
-          </div>
+          <label id="diasNocturnosWrap" class="field hide">
+            <span>Días nocturnos</span>
+            <input id="diasNocturnosDias" type="number" min="0" inputmode="numeric" placeholder="Igual a días trabajados" />
+          </label>
         </div>
 
-        <div class="stack">
-          <button id="btnCalcularSueldo" class="btn primary">Calcular sueldo</button>
-          <button id="btnOpcionesAvanzadas" class="btn info">Opciones avanzadas</button>
+        <div class="cta">
+          <button id="btn-calcular-dias" class="btn btn-brand">Calcular sueldo</button>
+          <button id="btn-opciones" class="btn btn-accent">Opciones avanzadas</button>
         </div>
 
-        <div id="containerPostCalculo" class="results hidden">
-          <p id="txtNeto" class="highlight"></p>
-          <p id="txtBruto" class="muted"></p>
-          <p id="txtAlternativo" class="alt muted"></p>
-          <button id="btnVerDetalleCompleto" class="btn ghost wide">Ver detalle completo</button>
+        <div id="resultado-dias" class="resultado hide">
+          <div class="neto" id="neto-dias"></div>
+          <div class="bruto" id="bruto-dias"></div>
+          <div class="alt" id="alt-dias"></div>
+          <button id="btn-detalle-dias" class="btn btn-ghost">Ver detalle completo</button>
         </div>
       </section>
 
-      <!-- FORM: POR HORAS -->
-      <section id="containerHoras" class="card hidden">
-        <h2>Calcular por horas</h2>
+      <!-- MODO HORAS -->
+      <section id="form-horas" class="card hide">
+        <div class="grid">
+          <label class="field">
+            <span>Horas totales del mes</span>
+            <input id="horasTotales" type="number" min="0" inputmode="numeric" placeholder="Ej. 240" />
+          </label>
 
-        <div class="grid-2">
-          <div class="field">
-            <label for="edtHorasTotales">Horas totales</label>
-            <input id="edtHorasTotales" type="number" inputmode="numeric" placeholder="0" />
-          </div>
+          <label class="field">
+            <span>Días feriados</span>
+            <input id="diasFeriadosHoras" type="number" min="0" inputmode="numeric" placeholder="Ej. 1" />
+          </label>
 
-          <div class="field">
-            <label for="edtDiasFeriadosHoras">Días feriados</label>
-            <input id="edtDiasFeriadosHoras" type="number" inputmode="numeric" placeholder="0" />
-          </div>
+          <label class="field">
+            <span>Días nocturnos</span>
+            <input id="diasNocturnos" type="number" min="0" inputmode="numeric" placeholder="Ej. 20" />
+          </label>
 
-          <div class="field">
-            <label for="edtDiasNocturnos">Días nocturnos</label>
-            <input id="edtDiasNocturnos" type="number" inputmode="numeric" placeholder="0" />
-          </div>
+          <label class="field">
+            <span>Años de antigüedad</span>
+            <input id="aniosAntHoras" type="number" min="0" inputmode="numeric" placeholder="Ej. 1" />
+          </label>
 
-          <div class="field">
-            <label for="edtAniosAntiguedadHoras">Años de antigüedad</label>
-            <input id="edtAniosAntiguedadHoras" type="number" inputmode="numeric" placeholder="0" />
-          </div>
-
-          <div class="field checkbox-col" style="grid-column:1/-1;">
+          <div class="checks">
             <label class="check">
-              <input id="chkAfiliadoSindicatoHoras" type="checkbox" />
+              <input id="sindicatoHoras" type="checkbox" />
               <span>Sindicato</span>
             </label>
           </div>
         </div>
 
-        <div class="stack">
-          <button id="btnCalcularSueldoHoras" class="btn primary">Calcular sueldo</button>
-          <button id="btnOpcionesAvanzadasHoras" class="btn info">Opciones avanzadas</button>
+        <div class="cta">
+          <button id="btn-calcular-horas" class="btn btn-brand">Calcular sueldo</button>
+          <button id="btn-opciones-2" class="btn btn-accent">Opciones avanzadas</button>
         </div>
 
-        <div id="containerPostCalculoHoras" class="results hidden">
-          <p id="txtNetoHoras" class="highlight"></p>
-          <p id="txtBrutoHoras" class="muted"></p>
-          <button id="btnVerDetalleCompletoHoras" class="btn ghost wide">Ver detalle completo</button>
+        <div id="resultado-horas" class="resultado hide">
+          <div class="neto" id="neto-horas"></div>
+          <div class="bruto" id="bruto-horas"></div>
+          <button id="btn-detalle-horas" class="btn btn-ghost">Ver detalle completo</button>
         </div>
       </section>
-
-      <!-- PIE (crédito) -->
-      <footer class="footer">
-        <div class="footer-text">Desarrollado por Sebastián Sanavera ® • Powered Archive.org</div>
-      </footer>
     </main>
 
-    <!-- MODAL: DETALLE COMPLETO -->
-    <div id="modal-detalle" class="modal" aria-hidden="true">
-      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="detalle-title">
-        <h2 id="detalle-title">Detalle de liquidación</h2>
-        <pre id="txtContenidoDetalle" class="detalle"></pre>
+    <!-- MODAL Detalle -->
+    <div class="modal" id="modal-detalle">
+      <div class="modal-card lg">
+        <pre id="detalle-pre" class="detalle"></pre>
         <div class="modal-actions">
-          <button id="btnCompartirDetalle" class="btn info">Compartir</button>
-          <button id="btnCerrarDetalle" class="btn ghost">Cerrar</button>
+          <button id="btn-cerrar-detalle" class="btn btn-ghost">Cerrar</button>
+          <button id="btn-copiar" class="btn btn-accent">Copiar</button>
         </div>
       </div>
     </div>
 
-    <!-- MODAL: OPCIONES AVANZADAS (2 columnas) -->
-    <div id="modal-opciones" class="modal" aria-hidden="true">
-      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="opcavz-title">
-        <h2 id="opcavz-title">Opciones avanzadas</h2>
-
-        <div class="grid-2 modal-grid">
-          <!-- Fila completa -->
-          <div class="field full">
-            <label for="horasExtrasDesde">Horas extras desde</label>
+    <!-- MODAL Opciones avanzadas -->
+    <div class="modal" id="modal-opciones">
+      <div class="modal-card">
+        <h2>Opciones avanzadas</h2>
+        <div class="grid">
+          <label class="field">
+            <span>Horas extras desde</span>
             <select id="horasExtrasDesde">
               <option value="192">192</option>
               <option value="200">200</option>
               <option value="208" selected>208</option>
             </select>
-          </div>
+          </label>
 
-          <div class="field">
-            <label for="horaNormal">Hora normal</label>
-            <input id="horaNormal" type="number" step="0.01" inputmode="decimal" placeholder="0" />
-          </div>
-
-          <div class="field">
-            <label for="horaExtra50">Hora extra 50%</label>
-            <input id="horaExtra50" type="number" step="0.01" inputmode="decimal" placeholder="0" />
-          </div>
-
-          <div class="field">
-            <label for="horaExtra100">Hora extra 100%</label>
-            <input id="horaExtra100" type="number" step="0.01" inputmode="decimal" placeholder="0" />
-          </div>
-
-          <div class="field">
-            <label for="horaNocturna">Hora nocturna (adicional)</label>
-            <input id="horaNocturna" type="number" step="0.01" inputmode="decimal" placeholder="0" />
-          </div>
-
-          <div class="field">
-            <label for="plusAdicional">Plus adicional</label>
-            <input id="plusAdicional" type="number" step="0.01" inputmode="decimal" placeholder="0" />
-          </div>
-
-          <div class="field">
-            <label for="plusNoRemunerativo">Plus no remunerativo</label>
-            <input id="plusNoRemunerativo" type="number" step="0.01" inputmode="decimal" placeholder="0" />
-          </div>
-
-          <div class="field">
-            <label for="horasExtraJornada">Horas extra por jornada</label>
-            <input id="horasExtraJornada" type="number" step="1" inputmode="numeric" placeholder="0" />
-          </div>
-
-          <div class="field">
-            <label for="sueldoBasico">Sueldo básico</label>
-            <input id="sueldoBasico" type="number" step="0.01" inputmode="decimal" placeholder="0" />
-          </div>
-
-          <div class="field">
-            <label for="presentismo">Presentismo</label>
-            <input id="presentismo" type="number" step="0.01" inputmode="decimal" placeholder="0" />
-          </div>
-
-          <div class="field">
-            <label for="viaticos">Viáticos</label>
-            <input id="viaticos" type="number" step="0.01" inputmode="decimal" placeholder="0" />
-          </div>
+          <label class="field"><span>Hora normal</span><input id="vHora" type="number" step="0.01"></label>
+          <label class="field"><span>Hora extra 50%</span><input id="vHora50" type="number" step="0.01"></label>
+          <label class="field"><span>Hora extra 100%</span><input id="vHora100" type="number" step="0.01"></label>
+          <label class="field"><span>Hora nocturna (adicional)</span><input id="vHoraNoc" type="number" step="0.01"></label>
+          <label class="field"><span>Plus adicional</span><input id="plusAdi" type="number" step="0.01"></label>
+          <label class="field"><span>Plus no remunerativo</span><input id="plusNR" type="number" step="0.01"></label>
+          <label class="field"><span>Horas extra por jornada</span><input id="extraJornada" type="number" step="1"></label>
+          <label class="field"><span>Sueldo básico</span><input id="sBasico" type="number" step="0.01"></label>
+          <label class="field"><span>Presentismo</span><input id="presentismo" type="number" step="0.01"></label>
+          <label class="field"><span>Viáticos</span><input id="viaticos" type="number" step="0.01"></label>
+          <label class="field"><span>Horas nocturnas x día</span><input id="horasNocXD" type="number" step="1"></label>
         </div>
-
         <div class="modal-actions">
-          <button id="btnCancelarOpciones" class="btn ghost">Cancelar</button>
-          <button id="btnResetearOpciones" class="btn danger">Restablecer</button>
-          <button id="btnGuardarOpciones" class="btn primary">Guardar</button>
+          <button id="btn-reset" class="btn btn-ghost">Restablecer</button>
+          <div class="spacer"></div>
+          <button id="btn-cancelar-opc" class="btn">Cancelar</button>
+          <button id="btn-guardar-opc" class="btn btn-brand">Guardar</button>
         </div>
       </div>
     </div>
 
-    <!-- MODAL: ACERCA DE -->
-    <div id="modal-acerca" class="modal" aria-hidden="true">
-      <div class="modal-card small" role="dialog" aria-modal="true" aria-labelledby="acerca-title">
-        <h2 id="acerca-title">Acerca de la App</h2>
-        <p>Herramienta no oficial para estimar sueldos en Seguridad Privada (Argentina). Verificá siempre con tu recibo/convenio.</p>
-        <div class="modal-actions">
-          <button id="btnCerrarAcerca" class="btn primary">Cerrar</button>
-        </div>
-      </div>
-    </div>
-
+    <footer class="footer-text">Desarrollado por Sebastián Sanavera ®</footer>
   </div>
 
   <script src="app.js"></script>
