@@ -1,6 +1,9 @@
 /* ===========================
    Sueldo Vigilador (web)
-   Lógica clonada de la app Java
+   Regla feriado 12h (opción 0):
+   - 4h al 100%
+   - 8h pagadas como hora normal (renglón aparte)
+   - +8h se agregan a la sumatoria total para el corte de 208 (impacta en extras 50%)
    =========================== */
 
 // --- Valores por defecto
@@ -77,17 +80,11 @@ async function tryUpdateFromBlog(){
     }
     setConf(patch);
   }catch(e){
-    // sin drama, seguimos con local
+    // seguimos con local
   }
 }
 
-/* ===== LÓGICA DE CÁLCULO =====
-   Reglas clave:
-   - El usuario ingresa días TOTALES (incluyen feriados).
-   - Para feriado 12h (modo "4h al 100% + 8h normal"): SOLO 4h van a 100%.
-     Las 8h restantes NO se pagan aparte: se prorratean en el pool normal/50% según el tope 208.
-   - No se paga "hora normal" como renglón: el básico ya las incluye.
-*/
+/* ===== LÓGICA DE CÁLCULO ===== */
 function calcularSalario({
   diasFeriados = 0,
   aniosAntiguedad = 0,
@@ -99,24 +96,7 @@ function calcularSalario({
 }){
   const C = getConf();
 
-  // Horas feriado al 100% (regla “restar 4h por feriado” en 12h opción 0)
-  let horasFeriado100 = 0;
-  if (horasPorDia === 12 && formaPagoFeriado === 0) {
-    horasFeriado100 = diasFeriados * 4;             // solo estas van al 100%
-  } else if (horasPorDia === 12 && formaPagoFeriado === 1) {
-    horasFeriado100 = diasFeriados * 12;            // todo el día al 100%
-  } else if ((horasPorDia === 8 || horasPorDia === 10) && formaPagoFeriado === 2) {
-    horasFeriado100 = diasFeriados * horasPorDia;   // jornada completa al 100%
-  }
-
-  // Pool no feriado: horas totales menos SOLO las horas al 100%
-  const horasNoFeriado = horasTotales - horasFeriado100 + C.HORAS_EXTRA_JORNADA;
-
-  // Tope 208 para definir normales vs 50%
-  const horasNormales = Math.min(horasNoFeriado, C.HORAS_EXTRAS_DESDE);
-  const horasExtras50 = Math.max(0, horasNoFeriado - C.HORAS_EXTRAS_DESDE);
-
-  // Antigüedad aplicada a la hora (1% por año)
+  // Antigüedad aplicada a los valores hora
   const factorAnt = 1 + 0.01 * Math.max(0, aniosAntiguedad);
   const mult50  = C.V_HORA > 0 ? (C.V_HORA_50  / C.V_HORA) : 1.5;
   const mult100 = C.V_HORA > 0 ? (C.V_HORA_100 / C.V_HORA) : 2.0;
@@ -125,19 +105,51 @@ function calcularSalario({
   const vHora50Ant  = vHoraAnt * mult50;
   const vHora100Ant = vHoraAnt * mult100;
 
-  // Montos que SÍ van a Haberes
-  const valorExtras50   = horasExtras50   * vHora50Ant;
-  const valorFeriado100 = horasFeriado100 * vHora100Ant;
-  const nocturnidad     = diasNocturnos * C.HORAS_NOC_X_DIA * C.V_HORA_NOC;
-  const antiguedad      = C.SUELDO_BASICO * aniosAntiguedad * 0.01;
+  // ----- Feriados
+  let horasFeriado100 = 0;
+  let horasFeriadoNormal = 0;     // 8h pagadas normal por feriado (solo 12h opción 0)
+  let extraHorasPorFeriadoParaPool = 0; // +8h a la sumatoria total (impacta en extras 50%)
 
-  // OJO: NO se suma “horas normales” como dinero (el básico las cubre)
+  if (horasPorDia === 12 && formaPagoFeriado === 0) {
+    // Regla pedida:
+    // - 4h al 100
+    // - 8h normales (renglón aparte)
+    // - +8h al pool total (para el corte 208)
+    horasFeriado100 = diasFeriados * 4;
+    horasFeriadoNormal = diasFeriados * 8;
+    extraHorasPorFeriadoParaPool = diasFeriados * 8;
+  } else if (horasPorDia === 12 && formaPagoFeriado === 1) {
+    // Todo el día al 100%
+    horasFeriado100 = diasFeriados * 12;
+  } else if ((horasPorDia === 8 || horasPorDia === 10) && formaPagoFeriado === 2) {
+    // Jornada completa al 100%
+    horasFeriado100 = diasFeriados * horasPorDia;
+  }
+
+  // Pool no feriado (lo que define normales vs 50%)
+  // Importante: en 12h/opt0 restamos solo las 4h al 100 y sumamos +8 extra al pool.
+  const horasNoFeriado = horasTotales - horasFeriado100 + extraHorasPorFeriadoParaPool + C.HORAS_EXTRA_JORNADA;
+
+  const horasNormales = Math.min(horasNoFeriado, C.HORAS_EXTRAS_DESDE);
+  const horasExtras50 = Math.max(0, horasNoFeriado - C.HORAS_EXTRAS_DESDE);
+
+  // Montos
+  const valorExtras50       = horasExtras50       * vHora50Ant;
+  const valorFeriado100     = horasFeriado100     * vHora100Ant;
+  const valorFeriadoNormal  = horasFeriadoNormal  * vHoraAnt;   // renglón separado
+  const nocturnidad         = diasNocturnos * C.HORAS_NOC_X_DIA * C.V_HORA_NOC;
+  const antiguedad          = C.SUELDO_BASICO * aniosAntiguedad * 0.01;
+
+  // Bruto: básico + conceptos. OJO: no pagamos “hora normal” del pool (el básico las cubre),
+  // solo agregamos el renglón especial de "Feriado normal" cuando corresponde.
   const bruto = C.SUELDO_BASICO + C.PRESENTISMO + C.VIATICOS + C.PLUS_NR + C.PLUS_ADICIONAL
-              + valorExtras50 + valorFeriado100 + nocturnidad + antiguedad;
+              + valorExtras50 + valorFeriado100 + valorFeriadoNormal
+              + nocturnidad + antiguedad;
 
   // Remunerativo para descuentos (excluye PLUS_NR)
+  // Incluye extras y feriado 100, y también el renglón “feriado normal” porque es remunerativo.
   const remunerativo = C.SUELDO_BASICO + C.PRESENTISMO + C.PLUS_ADICIONAL
-                     + antiguedad + nocturnidad + valorExtras50 + valorFeriado100;
+                     + antiguedad + nocturnidad + valorExtras50 + valorFeriado100 + valorFeriadoNormal;
 
   let descuentos = remunerativo * 0.17; // 11 + 3 + 3
   if (sindicato){
@@ -148,9 +160,16 @@ function calcularSalario({
 
   // Detalle
   const hsNoct = diasNocturnos * C.HORAS_NOC_X_DIA;
-  const aclaracionFeri = (horasPorDia===12 && formaPagoFeriado===0 && diasFeriados>0)
-    ? `- Feriado 100%: ${horasFeriado100} hs\n- Nota: Las 8 hs restantes de cada feriado se prorratean como Normales/50% según el tope 208.\n`
-    : (horasFeriado100>0 ? `- Feriado 100%: ${horasFeriado100} hs\n` : "");
+
+  const lineasFeriadoHoras =
+    (horasPorDia===12 && formaPagoFeriado===0 && diasFeriados>0)
+      ? `- Feriado 100%: ${horasFeriado100} hs\n- Feriado pago normal: ${horasFeriadoNormal} hs\n- Nota: Se adicionan ${extraHorasPorFeriadoParaPool} hs a la sumatoria total para el corte 208.\n`
+      : (horasFeriado100>0 ? `- Feriado 100%: ${horasFeriado100} hs\n` : "");
+
+  const lineasFeriadoHaberes =
+    (horasPorDia===12 && formaPagoFeriado===0 && diasFeriados>0)
+      ? `${valorFeriado100>0?`- Feriado 100%: ${money(valorFeriado100)}\n`:""}- Feriado pago normal (8h x feriado): ${money(valorFeriadoNormal)}\n`
+      : `${valorFeriado100>0?`- Feriado 100%: ${money(valorFeriado100)}\n`:""}`;
 
   const sindicatoLinea = sindicato ? `- Sindicato (3%): ${money(remunerativo*0.03)}\n` : "";
 
@@ -158,9 +177,9 @@ function calcularSalario({
 `DETALLE DE LIQUIDACIÓN
 
 HORAS TRABAJADAS:
-- Normales (incluye horas no-100%): ${horasNormales} hs
+- Normales (pool para corte 208): ${horasNormales} hs
 - Extras 50%: ${horasExtras50} hs
-${aclaracionFeri}${hsNoct>0?`- Nocturnas: ${hsNoct} hs\n`:""}
+${lineasFeriadoHoras}${hsNoct>0?`- Nocturnas: ${hsNoct} hs\n`:""}
 TARIFAS APLICADAS (con antigüedad ${aniosAntiguedad} años):
 - Hora normal ajustada: ${money(vHoraAnt)}
 - Hora extra 50% ajustada: ${money(vHora50Ant)}
@@ -172,7 +191,7 @@ HABERES BRUTOS:
 - Viáticos: ${money(C.VIATICOS)}
 - Plus no remunerativo: ${money(C.PLUS_NR)}
 ${C.PLUS_ADICIONAL>0?`- Plus adicional: ${money(C.PLUS_ADICIONAL)}\n`:""}- Extras 50%: ${money(valorExtras50)}
-${valorFeriado100>0?`- Feriado 100%: ${money(valorFeriado100)}\n`:""}${hsNoct>0?`- Nocturnidad: ${money(nocturnidad)}\n`:""}- Antigüedad: ${money(antiguedad)}
+${lineasFeriadoHaberes}${hsNoct>0?`- Nocturnidad: ${money(nocturnidad)}\n`:""}- Antigüedad: ${money(antiguedad)}
 
 TOTAL BRUTO: ${money(bruto)}
 
@@ -186,7 +205,7 @@ NETO A COBRAR: ${money(neto)}`;
 
   return {
     neto, bruto, detalle,
-    horasNormales, horasExtras50, horasFeriado100
+    horasNormales, horasExtras50, horasFeriado100, horasFeriadoNormal
   };
 }
 
@@ -277,9 +296,9 @@ window.addEventListener("DOMContentLoaded", async () => {
     try{ await navigator.clipboard.writeText($("#detalle-pre").textContent); alert("Detalle copiado"); }catch(_){}
   };
 
-  // Calcular (modo días) — DÍAS TOTALES: NO sumamos feriados aparte
+  // Calcular (modo días) — DÍAS TOTALES (incluye feriados)
   $("#btn-calcular-dias").onclick = ()=>{
-    const diasTrab = parseInt($("#diasTrabajados").value||"0",10); // totales (incluye feriados)
+    const diasTrab = parseInt($("#diasTrabajados").value||"0",10);
     const diasFeri = parseInt($("#diasFeriados").value||"0",10);
     const aniosAnt = parseInt($("#aniosAnt").value||"0",10);
     const horasDia = parseInt($("#horasPorDia").value,10);
@@ -288,7 +307,6 @@ window.addEventListener("DOMContentLoaded", async () => {
     const diasNoc  = turnoNoc ? parseInt($("#diasNocturnosDias").value||String(diasTrab)||"0",10) : 0;
     const sind     = $("#sindicatoDias").checked;
 
-    // horasTotales = días totales * horas por día (NO + feriados)
     const horasTot = diasTrab * horasDia;
 
     const r = calcularSalario({
@@ -317,8 +335,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     const aniosAnt = parseInt($("#aniosAntHoras").value||"0",10);
     const sind     = $("#sindicatoHoras").checked;
 
-    // Por consistencia con la regla de feriado 12h opción 0
-    const horasDia = 12;
+    const horasDia = 12;  // para aplicar regla 12h opción 0 por defecto
     const formaF   = 0;
 
     const r = calcularSalario({
