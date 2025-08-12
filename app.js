@@ -1,9 +1,9 @@
 /* ===========================
    Sueldo Vigilador (web)
-   Lógica clonada de tu app Java
+   Lógica clonada de la app Java
    =========================== */
 
-// --- Valores por defecto (los de tu última versión)
+// --- Valores por defecto (los de la última versión)
 const DEFAULTS = {
   SUELDO_BASICO: 751735,
   PRESENTISMO:   153600,
@@ -81,13 +81,12 @@ async function tryUpdateFromBlog(){
     setConf(patch);
     console.log("Valores actualizados desde el blog:", patch);
   }catch(e){
-    // silencioso: seguimos con localStorage / defaults
     console.log("No se pudieron actualizar valores (CORS/Red). Se usan valores guardados.");
   }
 }
 
-// ===== LÓGICA DE CÁLCULO (port de Java) =====
-function calcularSalario({ // entradas “comunes”
+// ===== LÓGICA DE CÁLCULO =====
+function calcularSalario({
   diasFeriados = 0,
   aniosAntiguedad = 0,
   horasTotales = 0,
@@ -98,7 +97,7 @@ function calcularSalario({ // entradas “comunes”
 }){
   const C = getConf();
 
-  // Feriados → horas 50/100 exactas (como en Java)
+  // Feriados → horas 50/100
   let horasFeriado100 = 0, horasFeriado50 = 0;
   if (formaPagoFeriado === 0 && horasPorDia === 12) {
     horasFeriado100 = diasFeriados * 4;
@@ -113,7 +112,7 @@ function calcularSalario({ // entradas “comunes”
   const horasNormales = Math.min(horasNoFeriado, C.HORAS_EXTRAS_DESDE);
   const horasExtras50 = Math.max(0, horasNoFeriado - C.HORAS_EXTRAS_DESDE);
 
-  // Antigüedad aplicada a la hora (factor 1% por año)
+  // Antigüedad
   const factorAnt = 1 + 0.01 * Math.max(0, aniosAntiguedad);
   const mult50  = C.V_HORA > 0 ? (C.V_HORA_50 / C.V_HORA)   : 1.5;
   const mult100 = C.V_HORA > 0 ? (C.V_HORA_100 / C.V_HORA)  : 2.0;
@@ -122,7 +121,6 @@ function calcularSalario({ // entradas “comunes”
   const vHora50Ant    = vHoraAnt * mult50;
   const vHora100Ant   = vHoraAnt * mult100;
 
-  // Montos
   const valorExtras50   = horasExtras50   * vHora50Ant;
   const valorFeriado100 = horasFeriado100 * vHora100Ant;
   const valorFeriado50  = horasFeriado50  * vHoraAnt;
@@ -132,10 +130,9 @@ function calcularSalario({ // entradas “comunes”
   const bruto = C.SUELDO_BASICO + C.PRESENTISMO + C.VIATICOS + C.PLUS_NR + C.PLUS_ADICIONAL +
                 valorExtras50 + valorFeriado100 + valorFeriado50 + nocturnidad + antiguedad;
 
-  // Remunerativo (excluye PLUS_NR)
   const remunerativo = C.SUELDO_BASICO + C.PRESENTISMO + C.PLUS_ADICIONAL + antiguedad + nocturnidad + valorExtras50 + valorFeriado100;
 
-  let descuentos = remunerativo * 0.17; // 11 + 3 + 3
+  let descuentos = remunerativo * 0.17;
   let sindicatoDesc = 0;
   if (sindicato){
     sindicatoDesc = remunerativo * 0.03;
@@ -144,7 +141,6 @@ function calcularSalario({ // entradas “comunes”
 
   const neto = bruto - descuentos;
 
-  // Detalle
   const hsNoct = diasNocturnos * C.HORAS_NOC_X_DIA;
   const detalle =
 `DETALLE DE LIQUIDACIÓN
@@ -186,31 +182,29 @@ NETO A COBRAR: ${money(neto)}`;
 
 // ===== UI wiring =====
 window.addEventListener("DOMContentLoaded", async () => {
-  await tryUpdateFromBlog(); // si no se puede, no rompe nada
+  await tryUpdateFromBlog();
 
-  // modal modo
   $("#btn-modo-dias").onclick = () => { MODO_HORAS=false; $("#modal-modo").classList.remove("show"); $("#form-dias").classList.remove("hide"); };
   $("#btn-modo-horas").onclick = () => { MODO_HORAS=true;  $("#modal-modo").classList.remove("show"); $("#form-horas").classList.remove("hide"); };
   $("#btn-acerca").onclick = () => {
     alert(
-  "Sueldo Vigilador (versión web)\n" +
-  "Adaptado desde la aplicación Android original.\n" +
-  "Permite calcular el sueldo de un vigilador con opciones avanzadas:\n" +
-  "- Horas normales y extras (50% y 100%)\n" +
-  "- Horas nocturnas y adicionales\n" +
-  "- Plus remunerativo y no remunerativo\n" +
-  "- Cálculo por días o por horas trabajadas\n" +
-  "\n" +
-  "Desarrollado por Sebastián Sanavera\n" +
-  "Código libre y disponible en GitHub.\n" +
-  "Si querés el código para verlo, editarlo o aprender, escribime:\n" +
-  "Tel: 11 3947 6360"
-);  };
+      "Sueldo Vigilador (versión web)\n" +
+      "Adaptado desde la aplicación Android original.\n" +
+      "Permite calcular el sueldo de un vigilador con opciones avanzadas:\n" +
+      "- Horas normales y extras (50% y 100%)\n" +
+      "- Horas nocturnas y adicionales\n" +
+      "- Plus remunerativo y no remunerativo\n" +
+      "- Cálculo por días o por horas trabajadas\n" +
+      "\n" +
+      "Desarrollado por Sebastián Sanavera\n" +
+      "Código libre y disponible en GitHub.\n" +
+      "Si querés el código para verlo, editarlo o aprender, escribime:\n" +
+      "Tel: 11 3947 6360"
+    );
+  };
 
-  // “Nuevo cálculo”
   $("#btn-nuevo").onclick = () => location.reload();
 
-  // Mostrar/ocultar días nocturnos en modo días
   $("#turnoNocheDias").addEventListener("change", (e)=>{
     $("#diasNocturnosWrap").classList.toggle("hide", !e.target.checked);
     if(e.target.checked){
@@ -221,7 +215,6 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // Opciones avanzadas (carga de valores)
   const loadOpciones = ()=>{
     const C = getConf();
     $("#horasExtrasDesde").value = String(C.HORAS_EXTRAS_DESDE);
@@ -262,7 +255,6 @@ window.addEventListener("DOMContentLoaded", async () => {
     $("#modal-opciones").classList.remove("show");
   };
 
-  // Detalle modal
   const openDetalle = ()=>{ $("#detalle-pre").textContent = DETALLE; $("#modal-detalle").classList.add("show"); };
   $("#btn-detalle-dias").onclick = openDetalle;
   $("#btn-detalle-horas").onclick = openDetalle;
@@ -271,7 +263,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     try{ await navigator.clipboard.writeText($("#detalle-pre").textContent); alert("Detalle copiado"); }catch(_){ }
   };
 
-  // Calcular (modo días)
+  // Calcular (modo días) - corregido
   $("#btn-calcular-dias").onclick = ()=>{
     const diasTrab = parseInt($("#diasTrabajados").value||"0",10);
     const diasFeri = parseInt($("#diasFeriados").value||"0",10);
@@ -282,7 +274,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     const diasNoc  = turnoNoc ? parseInt($("#diasNocturnosDias").value||String(diasTrab)||"0",10) : 0;
     const sind     = $("#sindicatoDias").checked;
 
-    const horasTot = (diasTrab + diasFeri) * horasDia;
+    const horasTot = diasTrab * horasDia;
 
     const r = calcularSalario({
       diasFeriados: diasFeri,
@@ -295,12 +287,9 @@ window.addEventListener("DOMContentLoaded", async () => {
     });
 
     DETALLE = r.detalle;
-
     $("#resultado-dias").classList.remove("hide");
     $("#neto-dias").textContent  = "NETO A COBRAR: " + money(r.neto);
     $("#bruto-dias").textContent = "Bruto: " + money(r.bruto);
-
-    // “Resultado alternativo” (misma lógica que tu Java)
     $("#alt-dias").textContent = "Resultado alternativo: " + money(r.neto);
   };
 
@@ -312,7 +301,6 @@ window.addEventListener("DOMContentLoaded", async () => {
     const aniosAnt = parseInt($("#aniosAntHoras").value||"0",10);
     const sind     = $("#sindicatoHoras").checked;
 
-    // En modo horas: usamos 12h por defecto para regla de feriados (igual que la app al permitir selección)
     const horasDia = 12;
     const formaF   = 0;
 
@@ -327,7 +315,6 @@ window.addEventListener("DOMContentLoaded", async () => {
     });
 
     DETALLE = r.detalle;
-
     $("#resultado-horas").classList.remove("hide");
     $("#neto-horas").textContent  = "NETO A COBRAR: " + money(r.neto);
     $("#bruto-horas").textContent = "Bruto: " + money(r.bruto);
