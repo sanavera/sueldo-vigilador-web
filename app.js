@@ -8,7 +8,7 @@
    - No se agregan horas “extra” al pool por feriado
    =========================== */
 
-// --- Valores por defecto (dejá los tuyos si ya tenés julio cargado en localStorage)
+// --- Valores por defecto (en localStorage)
 const DEFAULTS = {
   SUELDO_BASICO: 751735,
   PRESENTISMO:   153600,
@@ -144,10 +144,15 @@ function calcularSalario({
   const remunerativo = C.SUELDO_BASICO + C.PRESENTISMO + C.PLUS_ADICIONAL
                      + antiguedad + nocturnidad + valorExtras50 + valorFeriado100 + valorFeriadoNormal;
 
+  // Descuentos legales + sindicato (si aplica)
   let descuentos = remunerativo * 0.17; // 11 + 3 + 3
   if (sindicato){
     descuentos += remunerativo * 0.03;
   }
+
+  // >>> AP O.S. 3% sobre SUMA NO REMUNERATIVA (PLUS_NR)
+  const aposDesc = C.PLUS_NR * 0.03;
+  descuentos += aposDesc;
 
   const neto = bruto - descuentos;
 
@@ -202,7 +207,8 @@ DESCUENTOS:
 - Jubilación (11%): ${money(remunerativo*0.11)}
 - Obra Social (3%): ${money(remunerativo*0.03)}
 - PAMI (3%): ${money(remunerativo*0.03)}
-${sindicatoLinea}TOTAL DESCUENTOS: ${money(descuentos)}
+${sindicatoLinea}- AP O.S. 3% sobre suma no remunerativa: ${money(aposDesc)}
+TOTAL DESCUENTOS: ${money(descuentos)}
 
 NETO A COBRAR: ${money(neto)}`;
 
