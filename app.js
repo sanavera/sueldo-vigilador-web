@@ -112,12 +112,12 @@ function calcularSalario({
 
   if (horasPorDia === 12 && formaPagoFeriado === 0) {
     // Regla simple: el pool NO cambia acá (lo define el caller).
-    horasFeriado100   = diasFeriados * 4;
-    horasFeriadoNormal= diasFeriados * 8;
+    horasFeriado100    = diasFeriados * 4;
+    horasFeriadoNormal = diasFeriados * 8;
   } else if (horasPorDia === 12 && formaPagoFeriado === 1) {
-    horasFeriado100   = diasFeriados * 12;
+    horasFeriado100    = diasFeriados * 12;
   } else if ((horasPorDia === 8 || horasPorDia === 10) && formaPagoFeriado === 2) {
-    horasFeriado100   = diasFeriados * horasPorDia;
+    horasFeriado100    = diasFeriados * horasPorDia;
   }
 
   // Pool de horas para corte 208 (NO tocamos por feriado acá)
@@ -357,4 +357,4 @@ window.addEventListener("DOMContentLoaded", async () => {
     $("#neto-horas").textContent  = "NETO A COBRAR: " + money(r.neto);
     $("#bruto-horas").textContent = "Bruto: " + money(r.bruto);
   };
-});
+});loí
