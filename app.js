@@ -1,12 +1,14 @@
 /* ===========================
    Sueldo Vigilador (web)
-   Regla feriado 12h (opción 0):
-   - Pool (corte 208) = horasTotales - (feriados * 4)
-     (las 8h restantes del feriado permanecen en el pool)
-   - Feriado: 4h al 100% + 8h normales (renglón aparte)
+   Regla feriado 12h (opción 0) — FINAL:
+   - Pool para corte 208:
+       · Modo DÍAS: dias*horasDia - (feriados*4)
+       · Modo HORAS: horasTotales - (feriados*4)
+   - Feriado 12h (opción 0): 4h al 100% + 8h feriado normal (renglón aparte)
+   - No se agregan horas “extra” al pool por feriado
    =========================== */
 
-// --- Valores por defecto
+// --- Valores por defecto (dejá los tuyos si ya tenés julio cargado en localStorage)
 const DEFAULTS = {
   SUELDO_BASICO: 751735,
   PRESENTISMO:   153600,
@@ -89,7 +91,7 @@ async function tryUpdateFromBlog(){
 function calcularSalario({
   diasFeriados = 0,
   aniosAntiguedad = 0,
-  horasTotales = 0,   // horas totales trabajadas del mes (sin tocar)
+  horasPool = 0,      // << horas ya preparadas para el corte 208 (ver callers)
   diasNocturnos = 0,
   horasPorDia = 12,
   formaPagoFeriado = 0,
@@ -111,18 +113,17 @@ function calcularSalario({
   let horasFeriadoNormal = 0; // 8h por feriado (solo 12h opción 0)
 
   if (horasPorDia === 12 && formaPagoFeriado === 0) {
-    // 4h al 100 + 8h normal (renglón aparte)
+    // 4h al 100 + 8h feriado normal (renglón aparte)
     horasFeriado100    = diasFeriados * 4;
     horasFeriadoNormal = diasFeriados * 8;
   } else if (horasPorDia === 12 && formaPagoFeriado === 1) {
-    horasFeriado100    = diasFeriados * 12;
+    horasFeriado100    = diasFeriados * 12; // todo el día al 100
   } else if ((horasPorDia === 8 || horasPorDia === 10) && formaPagoFeriado === 2) {
-    horasFeriado100    = diasFeriados * horasPorDia;
+    horasFeriado100    = diasFeriados * horasPorDia; // jornada completa al 100
   }
 
-  // Pool para el corte 208:
-  // contar todas las horas trabajadas, pero RESTAR 4h por cada feriado (las 100%).
-  const horasNoFeriado = (horasTotales - horasFeriado100) + C.HORAS_EXTRA_JORNADA;
+  // Pool para corte 208 (ya viene preparado por el caller) + adicionales manuales
+  const horasNoFeriado = Math.max(0, horasPool + C.HORAS_EXTRA_JORNADA);
 
   const horasNormales = Math.min(horasNoFeriado, C.HORAS_EXTRAS_DESDE);
   const horasExtras50 = Math.max(0, horasNoFeriado - C.HORAS_EXTRAS_DESDE);
@@ -130,16 +131,16 @@ function calcularSalario({
   // Montos
   const valorExtras50       = horasExtras50       * vHora50Ant;
   const valorFeriado100     = horasFeriado100     * vHora100Ant;
-  const valorFeriadoNormal  = horasFeriadoNormal  * vHoraAnt;   // renglón aparte
+  const valorFeriadoNormal  = horasFeriadoNormal  * vHoraAnt;   // remunerativo
   const nocturnidad         = diasNocturnos * C.HORAS_NOC_X_DIA * C.V_HORA_NOC;
   const antiguedad          = C.SUELDO_BASICO * aniosAntiguedad * 0.01;
 
-  // Bruto
+  // Bruto (el básico cubre las horas “normales” del pool; feriado normal es renglón aparte)
   const bruto = C.SUELDO_BASICO + C.PRESENTISMO + C.VIATICOS + C.PLUS_NR + C.PLUS_ADICIONAL
               + valorExtras50 + valorFeriado100 + valorFeriadoNormal
               + nocturnidad + antiguedad;
 
-  // Remunerativo (excluye PLUS_NR)
+  // Remunerativo para descuentos (excluye PLUS_NR)
   const remunerativo = C.SUELDO_BASICO + C.PRESENTISMO + C.PLUS_ADICIONAL
                      + antiguedad + nocturnidad + valorExtras50 + valorFeriado100 + valorFeriadoNormal;
 
@@ -154,15 +155,19 @@ function calcularSalario({
   const hsNoct = diasNocturnos * C.HORAS_NOC_X_DIA;
 
   const lineasFeriadoHoras =
-    (horasFeriado100>0 || horasFeriadoNormal>0)
+    (horasPorDia===12 && formaPagoFeriado===0 && diasFeriados>0)
       ? `- Feriado 100%: ${horasFeriado100} hs
 - Feriado pago normal: ${horasFeriadoNormal} hs
 `
-      : "";
+      : (horasFeriado100>0 ? `- Feriado 100%: ${horasFeriado100} hs
+` : "");
 
   const lineasFeriadoHaberes =
-      `${valorFeriado100>0?`- Feriado 100%: ${money(valorFeriado100)}
-`:""}${valorFeriadoNormal>0?`- Feriado pago normal (8h x feriado): ${money(valorFeriadoNormal)}
+    (horasPorDia===12 && formaPagoFeriado===0 && diasFeriados>0)
+      ? `${valorFeriado100>0?`- Feriado 100%: ${money(valorFeriado100)}
+`:""}- Feriado pago normal (8h x feriado): ${money(valorFeriadoNormal)}
+`
+      : `${valorFeriado100>0?`- Feriado 100%: ${money(valorFeriado100)}
 `:""}`;
 
   const sindicatoLinea = sindicato ? `- Sindicato (3%): ${money(remunerativo*0.03)}
@@ -294,9 +299,9 @@ window.addEventListener("DOMContentLoaded", async () => {
     try{ await navigator.clipboard.writeText($("#detalle-pre").textContent); alert("Detalle copiado"); }catch(_){}
   };
 
-  // Calcular (modo días) — DÍAS TOTALES (incluye feriados)
+  // Calcular (modo DÍAS) — pool = días*horasDia - (feriados*4)
   $("#btn-calcular-dias").onclick = ()=>{
-    const diasTrab = parseInt($("#diasTrabajados").value||"0",10);
+    const diasTrab = parseInt($("#diasTrabajados").value||"0",10); // totales (incluye feriados)
     const diasFeri = parseInt($("#diasFeriados").value||"0",10);
     const aniosAnt = parseInt($("#aniosAnt").value||"0",10);
     const horasDia = parseInt($("#horasPorDia").value,10);
@@ -305,18 +310,16 @@ window.addEventListener("DOMContentLoaded", async () => {
     const diasNoc  = turnoNoc ? parseInt($("#diasNocturnosDias").value||String(diasTrab)||"0",10) : 0;
     const sind     = $("#sindicatoDias").checked;
 
-    // Horas totales trabajadas del mes (incluye feriados como días completos):
-    const horasTrabMes = diasTrab * horasDia;
-    // Pool para el corte 208: restar 4h por cada feriado (las 100%)
-    const pool = horasTrabMes - (diasFeri * 4);
+    // Pool para corte 208 según regla final
+    const horasPool = Math.max(0, (diasTrab * horasDia) - (diasFeri * 4));
 
     const r = calcularSalario({
       diasFeriados: diasFeri,
       aniosAntiguedad: aniosAnt,
-      horasTotales: pool,        // << pasamos el pool ya ajustado
+      horasPool,
       diasNocturnos: diasNoc,
       horasPorDia: horasDia,
-      formaPagoFeriado: formaF,  // define si hay 4h100 + 8 normal, etc.
+      formaPagoFeriado: formaF,
       sindicato: sind
     });
 
@@ -328,25 +331,25 @@ window.addEventListener("DOMContentLoaded", async () => {
     $("#alt-dias").textContent   = "Resultado alternativo: " + money(r.neto);
   };
 
-  // Calcular (modo horas)
+  // Calcular (modo HORAS) — pool = horasTotales - (feriados*4)
   $("#btn-calcular-horas").onclick = ()=>{
-    const horasMes = parseInt($("#horasTotales").value||"0",10); // horas totales que ingresa el usuario
+    const horasTot = parseInt($("#horasTotales").value||"0",10);   // total ingresado (incluye feriados)
     const diasFeri = parseInt($("#diasFeriadosHoras").value||"0",10);
     const diasNoc  = parseInt($("#diasNocturnos").value||"0",10);
     const aniosAnt = parseInt($("#aniosAntHoras").value||"0",10);
     const sind     = $("#sindicatoHoras").checked;
 
-    // Por defecto aplicamos la regla de 12h opción 0 para feriados
+    // Regla: descontar sólo 4h por feriado del pool
+    const horasPool = Math.max(0, horasTot - (diasFeri * 4));
+
+    // Para la regla de feriado 12h opción 0
     const horasDia = 12;
     const formaF   = 0;
-
-    // Pool: restar 4h por cada feriado (las 100%). Las otras 8 quedan en el pool.
-    const pool = horasMes - (diasFeri * 4);
 
     const r = calcularSalario({
       diasFeriados: diasFeri,
       aniosAntiguedad: aniosAnt,
-      horasTotales: pool,        // << pasamos el pool ya ajustado
+      horasPool,
       diasNocturnos: diasNoc,
       horasPorDia: horasDia,
       formaPagoFeriado: formaF,
