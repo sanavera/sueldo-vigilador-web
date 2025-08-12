@@ -30,6 +30,7 @@ let DETALLE = "";
 
 // Utils
 const $ = sel => document.querySelector(sel);
+function num(v, def=0){ const n = Number(v); return Number.isFinite(n) ? n : def; }
 function money(v){
   try{
     return (new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS',maximumFractionDigits:2})).format(v);
@@ -111,7 +112,7 @@ function calcularSalario({
   let extraHorasPorFeriadoParaPool = 0; // +8h a la sumatoria total (impacta en extras 50%)
 
   if (horasPorDia === 12 && formaPagoFeriado === 0) {
-    // Regla pedida:
+    // Regla pedida (siempre 12h):
     // - 4h al 100
     // - 8h normales (renglón aparte)
     // - +8h al pool total (para el corte 208)
@@ -126,8 +127,8 @@ function calcularSalario({
     horasFeriado100 = diasFeriados * horasPorDia;
   }
 
-  // Pool no feriado (lo que define normales vs 50%)
-  // Importante: en 12h/opt0 restamos solo las 4h al 100 y sumamos +8 extra al pool.
+  // Pool no feriado (define normales vs 50%)
+  // Importante: en 12h/opt0 restamos solo las 4h al 100 y sumamos +8 al pool.
   const horasNoFeriado = horasTotales - horasFeriado100 + extraHorasPorFeriadoParaPool + C.HORAS_EXTRA_JORNADA;
 
   const horasNormales = Math.min(horasNoFeriado, C.HORAS_EXTRAS_DESDE);
@@ -140,14 +141,13 @@ function calcularSalario({
   const nocturnidad         = diasNocturnos * C.HORAS_NOC_X_DIA * C.V_HORA_NOC;
   const antiguedad          = C.SUELDO_BASICO * aniosAntiguedad * 0.01;
 
-  // Bruto: básico + conceptos. OJO: no pagamos “hora normal” del pool (el básico las cubre),
-  // solo agregamos el renglón especial de "Feriado normal" cuando corresponde.
+  // Bruto: básico + conceptos. (El básico cubre las horas “normales” del pool).
+  // Se agrega "Feriado normal" como concepto remunerativo aparte cuando aplica.
   const bruto = C.SUELDO_BASICO + C.PRESENTISMO + C.VIATICOS + C.PLUS_NR + C.PLUS_ADICIONAL
               + valorExtras50 + valorFeriado100 + valorFeriadoNormal
               + nocturnidad + antiguedad;
 
   // Remunerativo para descuentos (excluye PLUS_NR)
-  // Incluye extras y feriado 100, y también el renglón “feriado normal” porque es remunerativo.
   const remunerativo = C.SUELDO_BASICO + C.PRESENTISMO + C.PLUS_ADICIONAL
                      + antiguedad + nocturnidad + valorExtras50 + valorFeriado100 + valorFeriadoNormal;
 
@@ -163,15 +163,23 @@ function calcularSalario({
 
   const lineasFeriadoHoras =
     (horasPorDia===12 && formaPagoFeriado===0 && diasFeriados>0)
-      ? `- Feriado 100%: ${horasFeriado100} hs\n- Feriado pago normal: ${horasFeriadoNormal} hs\n- Nota: Se adicionan ${extraHorasPorFeriadoParaPool} hs a la sumatoria total para el corte 208.\n`
-      : (horasFeriado100>0 ? `- Feriado 100%: ${horasFeriado100} hs\n` : "");
+      ? `- Feriado 100%: ${horasFeriado100} hs
+- Feriado pago normal: ${horasFeriadoNormal} hs
+- Nota: Se adicionan ${extraHorasPorFeriadoParaPool} hs a la sumatoria total para el corte 208.
+`
+      : (horasFeriado100>0 ? `- Feriado 100%: ${horasFeriado100} hs
+` : "");
 
   const lineasFeriadoHaberes =
     (horasPorDia===12 && formaPagoFeriado===0 && diasFeriados>0)
-      ? `${valorFeriado100>0?`- Feriado 100%: ${money(valorFeriado100)}\n`:""}- Feriado pago normal (8h x feriado): ${money(valorFeriadoNormal)}\n`
-      : `${valorFeriado100>0?`- Feriado 100%: ${money(valorFeriado100)}\n`:""}`;
+      ? `${valorFeriado100>0?`- Feriado 100%: ${money(valorFeriado100)}
+`:""}- Feriado pago normal (8h x feriado): ${money(valorFeriadoNormal)}
+`
+      : `${valorFeriado100>0?`- Feriado 100%: ${money(valorFeriado100)}
+`:""}`;
 
-  const sindicatoLinea = sindicato ? `- Sindicato (3%): ${money(remunerativo*0.03)}\n` : "";
+  const sindicatoLinea = sindicato ? `- Sindicato (3%): ${money(remunerativo*0.03)}
+` : "";
 
   const detalle =
 `DETALLE DE LIQUIDACIÓN
@@ -179,7 +187,8 @@ function calcularSalario({
 HORAS TRABAJADAS:
 - Normales (pool para corte 208): ${horasNormales} hs
 - Extras 50%: ${horasExtras50} hs
-${lineasFeriadoHoras}${hsNoct>0?`- Nocturnas: ${hsNoct} hs\n`:""}
+${lineasFeriadoHoras}${hsNoct>0?`- Nocturnas: ${hsNoct} hs
+`:""}
 TARIFAS APLICADAS (con antigüedad ${aniosAntiguedad} años):
 - Hora normal ajustada: ${money(vHoraAnt)}
 - Hora extra 50% ajustada: ${money(vHora50Ant)}
@@ -190,8 +199,10 @@ HABERES BRUTOS:
 - Presentismo: ${money(C.PRESENTISMO)}
 - Viáticos: ${money(C.VIATICOS)}
 - Plus no remunerativo: ${money(C.PLUS_NR)}
-${C.PLUS_ADICIONAL>0?`- Plus adicional: ${money(C.PLUS_ADICIONAL)}\n`:""}- Extras 50%: ${money(valorExtras50)}
-${lineasFeriadoHaberes}${hsNoct>0?`- Nocturnidad: ${money(nocturnidad)}\n`:""}- Antigüedad: ${money(antiguedad)}
+${C.PLUS_ADICIONAL>0?`- Plus adicional: ${money(C.PLUS_ADICIONAL)}
+`:""}- Extras 50%: ${money(valorExtras50)}
+${lineasFeriadoHaberes}${hsNoct>0?`- Nocturnidad: ${money(nocturnidad)}
+`:""}- Antigüedad: ${money(antiguedad)}
 
 TOTAL BRUTO: ${money(bruto)}
 
@@ -272,16 +283,16 @@ window.addEventListener("DOMContentLoaded", async () => {
   $("#btn-guardar-opc").onclick = ()=>{
     setConf({
       HORAS_EXTRAS_DESDE: parseInt($("#horasExtrasDesde").value,10),
-      V_HORA:     parseFloat($("#vHora").value||DEFAULTS.V_HORA),
-      V_HORA_50:  parseFloat($("#vHora50").value||DEFAULTS.V_HORA_50),
-      V_HORA_100: parseFloat($("#vHora100").value||DEFAULTS.V_HORA_100),
-      V_HORA_NOC: parseFloat($("#vHoraNoc").value||DEFAULTS.V_HORA_NOC),
-      PLUS_ADICIONAL: parseFloat($("#plusAdi").value||0),
-      PLUS_NR: parseFloat($("#plusNR").value||DEFAULTS.PLUS_NR),
+      V_HORA:     num($("#vHora").value, DEFAULTS.V_HORA),
+      V_HORA_50:  num($("#vHora50").value, DEFAULTS.V_HORA_50),
+      V_HORA_100: num($("#vHora100").value, DEFAULTS.V_HORA_100),
+      V_HORA_NOC: num($("#vHoraNoc").value, DEFAULTS.V_HORA_NOC),
+      PLUS_ADICIONAL: num($("#plusAdi").value, 0),
+      PLUS_NR: num($("#plusNR").value, DEFAULTS.PLUS_NR),
       HORAS_EXTRA_JORNADA: parseInt($("#extraJornada").value||0,10),
-      SUELDO_BASICO: parseFloat($("#sBasico").value||DEFAULTS.SUELDO_BASICO),
-      PRESENTISMO: parseFloat($("#presentismo").value||DEFAULTS.PRESENTISMO),
-      VIATICOS: parseFloat($("#viaticos").value||DEFAULTS.VIATICOS),
+      SUELDO_BASICO: num($("#sBasico").value, DEFAULTS.SUELDO_BASICO),
+      PRESENTISMO:   num($("#presentismo").value, DEFAULTS.PRESENTISMO),
+      VIATICOS:      num($("#viaticos").value, DEFAULTS.VIATICOS),
       HORAS_NOC_X_DIA: parseInt($("#horasNocXD").value||DEFAULTS.HORAS_NOC_X_DIA,10)
     });
     $("#modal-opciones").classList.remove("show");
