@@ -98,9 +98,16 @@ body{
 .sub{color:var(--muted); margin:0 0 14px}
 .btn-col{display:flex; flex-direction:column; gap:10px}
 
-.detalle{
-  white-space:pre-wrap; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  background:var(--tile); border:1px solid var(--line); border-radius:12px; padding:12px; max-height:62vh; overflow:auto;
+.detalle {
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9em;
+  background: var(--tile);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px;
+  max-height: 62vh;
+  overflow: auto;
 }
 
 .hide{display:none !important}
