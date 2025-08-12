@@ -1,9 +1,9 @@
 /* ===========================
    Sueldo Vigilador (web)
-   Regla feriado 12h (opción 0) — SIMPLE:
-   - Pool (para corte 208): dias * horasDia - (feriados * horasDia)
+   Regla feriado 12h (opción 0):
+   - Pool (corte 208) = horasTotales - (feriados * 4)
+     (las 8h restantes del feriado permanecen en el pool)
    - Feriado: 4h al 100% + 8h normales (renglón aparte)
-   - NO se agregan horas al pool por feriado
    =========================== */
 
 // --- Valores por defecto
@@ -89,7 +89,7 @@ async function tryUpdateFromBlog(){
 function calcularSalario({
   diasFeriados = 0,
   aniosAntiguedad = 0,
-  horasTotales = 0,   // pool ya definido por el caller
+  horasTotales = 0,   // horas totales trabajadas del mes (sin tocar)
   diasNocturnos = 0,
   horasPorDia = 12,
   formaPagoFeriado = 0,
@@ -111,7 +111,7 @@ function calcularSalario({
   let horasFeriadoNormal = 0; // 8h por feriado (solo 12h opción 0)
 
   if (horasPorDia === 12 && formaPagoFeriado === 0) {
-    // Regla simple: el pool NO cambia acá (lo define el caller).
+    // 4h al 100 + 8h normal (renglón aparte)
     horasFeriado100    = diasFeriados * 4;
     horasFeriadoNormal = diasFeriados * 8;
   } else if (horasPorDia === 12 && formaPagoFeriado === 1) {
@@ -120,8 +120,9 @@ function calcularSalario({
     horasFeriado100    = diasFeriados * horasPorDia;
   }
 
-  // Pool de horas para corte 208 (NO tocamos por feriado acá)
-  const horasNoFeriado = horasTotales + C.HORAS_EXTRA_JORNADA;
+  // Pool para el corte 208:
+  // contar todas las horas trabajadas, pero RESTAR 4h por cada feriado (las 100%).
+  const horasNoFeriado = (horasTotales - horasFeriado100) + C.HORAS_EXTRA_JORNADA;
 
   const horasNormales = Math.min(horasNoFeriado, C.HORAS_EXTRAS_DESDE);
   const horasExtras50 = Math.max(0, horasNoFeriado - C.HORAS_EXTRAS_DESDE);
@@ -129,11 +130,11 @@ function calcularSalario({
   // Montos
   const valorExtras50       = horasExtras50       * vHora50Ant;
   const valorFeriado100     = horasFeriado100     * vHora100Ant;
-  const valorFeriadoNormal  = horasFeriadoNormal  * vHoraAnt;
+  const valorFeriadoNormal  = horasFeriadoNormal  * vHoraAnt;   // renglón aparte
   const nocturnidad         = diasNocturnos * C.HORAS_NOC_X_DIA * C.V_HORA_NOC;
   const antiguedad          = C.SUELDO_BASICO * aniosAntiguedad * 0.01;
 
-  // Bruto (el básico cubre las “normales” del pool; feriado normal es renglón aparte)
+  // Bruto
   const bruto = C.SUELDO_BASICO + C.PRESENTISMO + C.VIATICOS + C.PLUS_NR + C.PLUS_ADICIONAL
               + valorExtras50 + valorFeriado100 + valorFeriadoNormal
               + nocturnidad + antiguedad;
@@ -153,19 +154,15 @@ function calcularSalario({
   const hsNoct = diasNocturnos * C.HORAS_NOC_X_DIA;
 
   const lineasFeriadoHoras =
-    (horasPorDia===12 && formaPagoFeriado===0 && diasFeriados>0)
+    (horasFeriado100>0 || horasFeriadoNormal>0)
       ? `- Feriado 100%: ${horasFeriado100} hs
 - Feriado pago normal: ${horasFeriadoNormal} hs
 `
-      : (horasFeriado100>0 ? `- Feriado 100%: ${horasFeriado100} hs
-` : "");
+      : "";
 
   const lineasFeriadoHaberes =
-    (horasPorDia===12 && formaPagoFeriado===0 && diasFeriados>0)
-      ? `${valorFeriado100>0?`- Feriado 100%: ${money(valorFeriado100)}
-`:""}- Feriado pago normal (8h x feriado): ${money(valorFeriadoNormal)}
-`
-      : `${valorFeriado100>0?`- Feriado 100%: ${money(valorFeriado100)}
+      `${valorFeriado100>0?`- Feriado 100%: ${money(valorFeriado100)}
+`:""}${valorFeriadoNormal>0?`- Feriado pago normal (8h x feriado): ${money(valorFeriadoNormal)}
 `:""}`;
 
   const sindicatoLinea = sindicato ? `- Sindicato (3%): ${money(remunerativo*0.03)}
@@ -308,16 +305,18 @@ window.addEventListener("DOMContentLoaded", async () => {
     const diasNoc  = turnoNoc ? parseInt($("#diasNocturnosDias").value||String(diasTrab)||"0",10) : 0;
     const sind     = $("#sindicatoDias").checked;
 
-    // Pool simple: días totales * horas x día - (feriados * horas x día)
-    const horasTot = (diasTrab * horasDia) - (diasFeri * horasDia);
+    // Horas totales trabajadas del mes (incluye feriados como días completos):
+    const horasTrabMes = diasTrab * horasDia;
+    // Pool para el corte 208: restar 4h por cada feriado (las 100%)
+    const pool = horasTrabMes - (diasFeri * 4);
 
     const r = calcularSalario({
       diasFeriados: diasFeri,
       aniosAntiguedad: aniosAnt,
-      horasTotales: horasTot,
+      horasTotales: pool,        // << pasamos el pool ya ajustado
       diasNocturnos: diasNoc,
       horasPorDia: horasDia,
-      formaPagoFeriado: formaF,
+      formaPagoFeriado: formaF,  // define si hay 4h100 + 8 normal, etc.
       sindicato: sind
     });
 
@@ -331,20 +330,23 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   // Calcular (modo horas)
   $("#btn-calcular-horas").onclick = ()=>{
-    const horasTot = parseInt($("#horasTotales").value||"0",10);
+    const horasMes = parseInt($("#horasTotales").value||"0",10); // horas totales que ingresa el usuario
     const diasFeri = parseInt($("#diasFeriadosHoras").value||"0",10);
     const diasNoc  = parseInt($("#diasNocturnos").value||"0",10);
     const aniosAnt = parseInt($("#aniosAntHoras").value||"0",10);
     const sind     = $("#sindicatoHoras").checked;
 
-    // En modo horas, el usuario ya define el pool; usamos 12h/opt0 p/feriado por defecto:
+    // Por defecto aplicamos la regla de 12h opción 0 para feriados
     const horasDia = 12;
     const formaF   = 0;
+
+    // Pool: restar 4h por cada feriado (las 100%). Las otras 8 quedan en el pool.
+    const pool = horasMes - (diasFeri * 4);
 
     const r = calcularSalario({
       diasFeriados: diasFeri,
       aniosAntiguedad: aniosAnt,
-      horasTotales: horasTot, // ya viene “pool”
+      horasTotales: pool,        // << pasamos el pool ya ajustado
       diasNocturnos: diasNoc,
       horasPorDia: horasDia,
       formaPagoFeriado: formaF,
@@ -357,4 +359,4 @@ window.addEventListener("DOMContentLoaded", async () => {
     $("#neto-horas").textContent  = "NETO A COBRAR: " + money(r.neto);
     $("#bruto-horas").textContent = "Bruto: " + money(r.bruto);
   };
-});loí
+});
