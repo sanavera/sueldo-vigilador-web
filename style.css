@@ -88,7 +88,6 @@ body{
 .modal-card{
   width:min(680px,92vw); background:var(--elev); border:1px solid var(--line);
   border-radius:var(--radius); box-shadow:var(--shadow); padding:18px;
-  max-height: 90vh; overflow: auto;
 }
 .modal-card.lg{width:min(960px,96vw)}
 .modal-card h2{margin:0 0 10px}
@@ -117,4 +116,10 @@ body{
 @media (max-width:560px){
   .grid{grid-template-columns:1fr}
   .content{padding-bottom:140px}
+}
+
+/* Que el modal de opciones no se desborde en móviles */
+#modal-opciones .modal-card {
+  max-height: 90vh;
+  overflow-y: auto;
 }
