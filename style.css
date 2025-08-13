@@ -65,7 +65,6 @@ body{
 .btn-accent{background:var(--accent); border:none; color:#061320}
 .btn-ghost{background:transparent; border:1px solid var(--line); color:var(--text)}
 .btn:active{transform:scale(.98)}
-.btn:disabled{opacity:.55; cursor:not-allowed}
 
 .resultado{margin-top:6px; text-align:center}
 .neto{color:#64f19c; font-weight:800; font-size:18px; margin-top:8px}
@@ -89,6 +88,7 @@ body{
 .modal-card{
   width:min(680px,92vw); background:var(--elev); border:1px solid var(--line);
   border-radius:var(--radius); box-shadow:var(--shadow); padding:18px;
+  max-height: 90vh; overflow: auto;
 }
 .modal-card.lg{width:min(960px,96vw)}
 .modal-card h2{margin:0 0 10px}
@@ -112,13 +112,6 @@ body{
 }
 
 .hide{display:none !important}
-
-/* Scroll en modales grandes */
-#modal-opciones .modal-card,
-#modal-escalas .modal-card {
-  max-height: 90vh;
-  overflow-y: auto;
-}
 
 /* Responsive */
 @media (max-width:560px){
