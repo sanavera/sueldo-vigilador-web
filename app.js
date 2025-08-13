@@ -8,6 +8,11 @@
    - No se agregan horas “extra” al pool por feriado
    =========================== */
 
+// --- Parámetro de cálculo de nocturnidad (por hora):
+//   0.001 = 0,1% del básico por hora  → reproduce ~$751,74 con básico $751.735
+//   0.01  = 1%   del básico por hora
+const NOCTURNIDAD_PCT = 0.001;
+
 // --- Valores por defecto (en localStorage)
 const DEFAULTS = {
   SUELDO_BASICO: 751735,
@@ -17,6 +22,7 @@ const DEFAULTS = {
   V_HORA:        4526.68,
   V_HORA_50:     6790.01,
   V_HORA_100:    9053.35,
+  // V_HORA_NOC queda como heredado pero NO se usa en el cálculo (se calcula del básico)
   V_HORA_NOC:    751.74,
   HORAS_EXTRAS_DESDE: 208,
   HORAS_NOC_X_DIA: 9,
@@ -77,7 +83,7 @@ async function tryUpdateFromBlog(){
         if(k==="VALOR_HORA_NORMAL")    patch.V_HORA  = v;
         if(k==="VALOR_HORA_EXTRA_50")  patch.V_HORA_50 = v;
         if(k==="VALOR_HORA_EXTRA_100") patch.V_HORA_100 = v;
-        if(k==="VALOR_HORA_NOCTURNA")  patch.V_HORA_NOC = v;
+        if(k==="VALOR_HORA_NOCTURNA")  patch.V_HORA_NOC = v; // no se usa si NOCTURNIDAD_PCT está definido
         if(k==="HORAS_NOCTURNAS_X_DIA") patch.HORAS_NOC_X_DIA = v|0;
       }
     }
@@ -128,11 +134,15 @@ function calcularSalario({
   const horasNormales = Math.min(horasNoFeriado, C.HORAS_EXTRAS_DESDE);
   const horasExtras50 = Math.max(0, horasNoFeriado - C.HORAS_EXTRAS_DESDE);
 
+  // --- Nocturnidad: se calcula SIEMPRE desde el básico por porcentaje por hora
+  const vHoraNoct = (C.SUELDO_BASICO || 0) * NOCTURNIDAD_PCT; // $/hora nocturna
+  const nocturnidadHoras = diasNocturnos * C.HORAS_NOC_X_DIA;
+  const nocturnidad      = nocturnidadHoras * vHoraNoct;
+
   // Montos
   const valorExtras50       = horasExtras50       * vHora50Ant;
   const valorFeriado100     = horasFeriado100     * vHora100Ant;
   const valorFeriadoNormal  = horasFeriadoNormal  * vHoraAnt;   // remunerativo
-  const nocturnidad         = diasNocturnos * C.HORAS_NOC_X_DIA * C.V_HORA_NOC;
   const antiguedad          = C.SUELDO_BASICO * aniosAntiguedad * 0.01;
 
   // Bruto (el básico cubre las horas “normales” del pool; feriado normal es renglón aparte)
@@ -150,15 +160,13 @@ function calcularSalario({
     descuentos += remunerativo * 0.03;
   }
 
-  // >>> AP O.S. 3% sobre SUMA NO REMUNERATIVA (PLUS_NR)
+  // AP O.S. 3% sobre SUMA NO REMUNERATIVA (PLUS_NR)
   const aposDesc = C.PLUS_NR * 0.03;
   descuentos += aposDesc;
 
   const neto = bruto - descuentos;
 
   // Detalle
-  const hsNoct = diasNocturnos * C.HORAS_NOC_X_DIA;
-
   const lineasFeriadoHoras =
     (horasPorDia===12 && formaPagoFeriado===0 && diasFeriados>0)
       ? `- Feriado 100%: ${horasFeriado100} hs
@@ -184,7 +192,7 @@ function calcularSalario({
 HORAS TRABAJADAS:
 - Normales (pool para corte 208): ${horasNormales} hs
 - Extras 50%: ${horasExtras50} hs
-${lineasFeriadoHoras}${hsNoct>0?`- Nocturnas: ${hsNoct} hs
+${lineasFeriadoHoras}${nocturnidadHoras>0?`- Nocturnas: ${nocturnidadHoras} hs (valor/h: ${money(vHoraNoct)})
 `:""}
 TARIFAS APLICADAS (con antigüedad ${aniosAntiguedad} años):
 - Hora normal ajustada: ${money(vHoraAnt)}
@@ -198,7 +206,7 @@ HABERES BRUTOS:
 - Plus no remunerativo: ${money(C.PLUS_NR)}
 ${C.PLUS_ADICIONAL>0?`- Plus adicional: ${money(C.PLUS_ADICIONAL)}
 `:""}- Extras 50%: ${money(valorExtras50)}
-${lineasFeriadoHaberes}${hsNoct>0?`- Nocturnidad: ${money(nocturnidad)}
+${lineasFeriadoHaberes}${nocturnidadHoras>0?`- Nocturnidad: ${money(nocturnidad)}
 `:""}- Antigüedad: ${money(antiguedad)}
 
 TOTAL BRUTO: ${money(bruto)}
@@ -231,7 +239,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 "Adaptado desde la aplicación Android original.\n" +
 "Calcula:\n" +
 "- Horas extras al 50% y 100%\n" +
-"- Nocturnidad y adicionales\n" +
+"- Nocturnidad y adicionales (desde básico)\n" +
 "- Antigüedad (1% por año)\n" +
 "- Modalidad por días u horas\n" +
 "\n" +
@@ -256,14 +264,16 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // Opciones avanzadas
+  // Opciones avanzadas (se siguen mostrando los valores, pero la nocturnidad se calcula del básico)
   const fillOpc = ()=>{
     const C = getConf();
     $("#horasExtrasDesde").value = String(C.HORAS_EXTRAS_DESDE);
     $("#vHora").value = C.V_HORA;
     $("#vHora50").value = C.V_HORA_50;
     $("#vHora100").value = C.V_HORA_100;
-    $("#vHoraNoc").value = C.V_HORA_NOC;
+    // Mostrar el valor calculado actual en el input (solo informativo/edición)
+    const vHoraNoctCalc = (C.SUELDO_BASICO || 0) * NOCTURNIDAD_PCT;
+    $("#vHoraNoc").value = Math.round(vHoraNoctCalc * 100) / 100;
     $("#plusAdi").value = C.PLUS_ADICIONAL;
     $("#plusNR").value = C.PLUS_NR;
     $("#extraJornada").value = C.HORAS_EXTRA_JORNADA;
@@ -284,6 +294,7 @@ window.addEventListener("DOMContentLoaded", async () => {
       V_HORA:     num($("#vHora").value, DEFAULTS.V_HORA),
       V_HORA_50:  num($("#vHora50").value, DEFAULTS.V_HORA_50),
       V_HORA_100: num($("#vHora100").value, DEFAULTS.V_HORA_100),
+      // V_HORA_NOC se guarda si lo editan, pero el cálculo usa NOCTURNIDAD_PCT * básico
       V_HORA_NOC: num($("#vHoraNoc").value, DEFAULTS.V_HORA_NOC),
       PLUS_ADICIONAL: num($("#plusAdi").value, 0),
       PLUS_NR: num($("#plusNR").value, DEFAULTS.PLUS_NR),
