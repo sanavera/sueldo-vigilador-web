@@ -26,7 +26,7 @@
         <div class="btn-col">
           <button id="btn-modo-dias" class="btn btn-brand">Por días trabajados</button>
           <button id="btn-modo-horas" class="btn btn-accent">Por horas trabajadas</button>
-          <button id="btn-acerca" class="btn btn-ghost">Acerca de la App</button>
+          <button id="btn-acerca" class="btn btn-ghost">Acerca de</button>
         </div>
       </div>
     </div>
@@ -168,6 +168,12 @@
       <div class="modal-card">
         <h2>Opciones avanzadas</h2>
         <div class="grid">
+          <!-- Spinner de Escala salarial -->
+          <label class="field">
+            <span>▼ Escala salarial</span>
+            <select id="escalaMes"></select>
+          </label>
+
           <label class="field">
             <span>Horas extras desde</span>
             <select id="horasExtrasDesde">
@@ -198,13 +204,45 @@
       </div>
     </div>
 
-    <!-- MODAL Acerca de (contenido se carga desde about.html) -->
-    <div class="modal" id="modal-about">
+    <!-- MODAL Acerca de -->
+    <div class="modal" id="modal-acerca">
       <div class="modal-card lg">
-        <div id="about-root" class="detalle">Cargando…</div>
-        <div class="modal-actions">
+        <div class="brand" style="margin-bottom:8px">
+          <img src="https://cdn.jsdelivr.net/gh/sanavera/sueldo-vigilador-web@main/ic_launcher.png" alt="" />
+          <h1>Sueldo <span>Vigilador</span></h1>
+        </div>
+
+        <div style="margin:6px 0 14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+          <strong>Desarrollador:</strong> <span>Sebastián Sanavera</span>
+          <span style="opacity:.7">•</span>
+          <span>Versión: <span class="chip" style="padding:4px 10px; border-radius:999px">Beta (modo prueba)</span></span>
+        </div>
+
+        <div class="card" style="margin-bottom:12px">
+          <h2 style="margin:0 0 8px; font-size:18px">Código abierto</h2>
+          <p class="sub" style="margin:0 0 8px">El código fuente está liberado para ver/editar/aprender:</p>
+          <ul class="about-list">
+            <li><a href="https://github.com/sanavera/sueldo-vigilador-web" target="_blank" rel="noopener">Repositorio en GitHub</a></li>
+            <li><a href="https://cdn.jsdelivr.net/gh/sanavera/sueldo-vigilador-web@main/ic_launcher.png" target="_blank" rel="noopener">Icono / assets (CDN)</a></li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h2 style="margin:0 0 8px; font-size:18px">Fuentes de información</h2>
+          <p class="sub" style="margin:0 8px 10px 0">Escalas salariales y normas consultadas:</p>
+          <ul class="about-list">
+            <li><a href="https://upsra.org.ar/" target="_blank" rel="noopener">UPSRA (Unión Personal de Seguridad)</a></li>
+            <li><a href="https://www.lavozdelvigilador.com/" target="_blank" rel="noopener">La Voz del Vigilador</a></li>
+            <li><a href="https://www.boletinoficial.gob.ar/" target="_blank" rel="noopener">Boletín Oficial de la República Argentina</a></li>
+          </ul>
+          <p class="sub" style="margin-top:10px">
+            La app implementa: antigüedad 1% anual, extras 50%/100%, nocturnidad (0,1% del básico por hora), feriados según modalidad 12h/8-10h, y APOS 3% sobre sumas no remunerativas.
+          </p>
+        </div>
+
+        <div class="modal-actions" style="margin-top:14px">
           <div class="spacer"></div>
-          <button id="btn-cerrar-about" class="btn btn-ghost">Cerrar</button>
+          <button id="btn-cerrar-acerca" class="btn btn-brand">Entendido</button>
         </div>
       </div>
     </div>
