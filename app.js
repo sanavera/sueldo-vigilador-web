@@ -9,9 +9,6 @@
    =========================== */
 
 // ===== Escalas precargadas (JUL/AGO/SEP 2025) =====
-// Julio = valores de tus ejemplos (los que te coincidieron)
-// Agosto = los que venías usando en DEFAULTS
-// Septiembre = por ahora iguales a Agosto (podés actualizar desde el blog)
 const SCALES = {
   "2025-07": {
     SUELDO_BASICO: 745030,
@@ -21,7 +18,7 @@ const SCALES = {
     V_HORA:        4583.01,
     V_HORA_50:     6874.52,
     V_HORA_100:    9166.03,
-    V_HORA_NOC:    751.74,
+    V_HORA_NOC:    751.74,   // 0,1% del básico por hora (tu valor)
     HORAS_EXTRAS_DESDE: 208,
     HORAS_NOC_X_DIA: 9,
     PLUS_ADICIONAL: 0,
@@ -41,7 +38,7 @@ const SCALES = {
     PLUS_ADICIONAL: 0,
     HORAS_EXTRA_JORNADA: 0
   },
-  "2025-09": { // placeholder = igual a Agosto hasta confirmar
+  "2025-09": { // por ahora igual a Agosto hasta confirmar
     SUELDO_BASICO: 751735,
     PRESENTISMO:   153600,
     VIATICOS:      443215,
@@ -57,7 +54,7 @@ const SCALES = {
   }
 };
 
-// --- Valores por defecto (en localStorage) — arrancamos con Agosto 2025
+// --- Defaults = Agosto (si no hay nada guardado)
 const DEFAULTS = { ...SCALES["2025-08"] };
 
 // Clave de configuración
@@ -82,65 +79,31 @@ function getConf(){
   const saved = JSON.parse(localStorage.getItem(LS) || "{}");
   return {...DEFAULTS, ...saved};
 }
-function setConf(partial){
-  const next = {...getConf(), ...partial};
-  localStorage.setItem(LS, JSON.stringify(next));
-  return next;
+function setConf(fullObj){
+  // Guardamos EXACTAMENTE lo que nos pasan (sin mezclar), para no pisar escalas
+  localStorage.setItem(LS, JSON.stringify(fullObj));
+  return fullObj;
 }
 function resetConfToScaleKey(key){
-  localStorage.setItem(LS, JSON.stringify(SCALES[key]));
+  if (SCALES[key]) setConf(SCALES[key]);
 }
 function resetConf(){
-  localStorage.setItem(LS, JSON.stringify(DEFAULTS));
+  setConf(DEFAULTS);
 }
 
-// Determinar escala “vigente” según fecha actual
+// Escala vigente por fecha
 function getAutoScaleKey(d=new Date()){
-  const y = d.getFullYear(), m = d.getMonth()+1; // 1..12
-  // Si es 2025-09 o posterior -> 2025-09; si es 08 -> 2025-08; si es <=07 -> 2025-07
+  const y = d.getFullYear(), m = d.getMonth()+1;
   if (y > 2025 || (y === 2025 && m >= 9)) return "2025-09";
   if (y === 2025 && m >= 8) return "2025-08";
   return "2025-07";
-}
-
-// Intento de actualización desde el blog (graceful por CORS)
-async function tryUpdateFromBlog(){
-  const BLOG_URL = "https://sanaverasebastian.blogspot.com/2025/07/valores-sueldo-vigilador-actualizados.html";
-  try{
-    const res = await fetch(BLOG_URL, {mode:"cors"});
-    const html = await res.text();
-    const m = html.match(/<pre>([\s\S]*?)<\/pre>/i);
-    if(!m) return;
-    const lines = m[1].split("\n").map(s=>s.trim()).filter(Boolean);
-    const patch = {};
-    for(const ln of lines){
-      const [k, raw] = ln.split("=").map(s=>s?.trim());
-      if(!k || !raw) continue;
-      const v = Number(raw);
-      if(Number.isFinite(v)){
-        if(k==="SUELDO_BASICO") patch.SUELDO_BASICO = v;
-        if(k==="PRESENTISMO")   patch.PRESENTISMO   = v;
-        if(k==="VIATICOS")      patch.VIATICOS      = v;
-        if(k==="PLUS_NO_REMUNERATIVO") patch.PLUS_NR = v;
-        if(k==="VALOR_HORA_NORMAL")    patch.V_HORA  = v;
-        if(k==="VALOR_HORA_EXTRA_50")  patch.V_HORA_50 = v;
-        if(k==="VALOR_HORA_EXTRA_100") patch.V_HORA_100 = v;
-        if(k==="VALOR_HORA_NOCTURNA")  patch.V_HORA_NOC = v;
-        if(k==="HORAS_NOCTURNAS_X_DIA") patch.HORAS_NOC_X_DIA = v|0;
-      }
-    }
-    setConf(patch);
-    // No tocamos el valor del spinner acá; el usuario elige
-  }catch(e){
-    // seguimos con local
-  }
 }
 
 /* ===== LÓGICA DE CÁLCULO ===== */
 function calcularSalario({
   diasFeriados = 0,
   aniosAntiguedad = 0,
-  horasPool = 0,      // << horas ya preparadas para el corte 208 (ver callers)
+  horasPool = 0,
   diasNocturnos = 0,
   horasPorDia = 12,
   formaPagoFeriado = 0,
@@ -159,20 +122,19 @@ function calcularSalario({
 
   // ----- Feriados (pagos separados)
   let horasFeriado100 = 0;
-  let horasFeriadoNormal = 0; // 8h por feriado (solo 12h opción 0)
+  let horasFeriadoNormal = 0;
 
   if (horasPorDia === 12 && formaPagoFeriado === 0) {
-    // 4h al 100 + 8h feriado normal (renglón aparte)
     horasFeriado100    = diasFeriados * 4;
     horasFeriadoNormal = diasFeriados * 8;
   } else if (horasPorDia === 12 && formaPagoFeriado === 1) {
-    horasFeriado100    = diasFeriados * 12; // todo el día al 100
+    horasFeriado100    = diasFeriados * 12;
   } else if ((horasPorDia === 8 || horasPorDia === 10) && formaPagoFeriado === 2) {
-    horasFeriado100    = diasFeriados * horasPorDia; // jornada completa al 100
+    horasFeriado100    = diasFeriados * horasPorDia;
   }
 
-  // Pool para corte 208 (ya viene preparado por el caller) + adicionales manuales
-  const horasNoFeriado = Math.max(0, horasPool + C.HORAS_EXTRA_JORNADA);
+  // Pool (no incluye feriado 100 ni feriado normal)
+  const horasNoFeriado = Math.max(0, horasPool);
 
   const horasNormales = Math.min(horasNoFeriado, C.HORAS_EXTRAS_DESDE);
   const horasExtras50 = Math.max(0, horasNoFeriado - C.HORAS_EXTRAS_DESDE);
@@ -184,29 +146,24 @@ function calcularSalario({
   const nocturnidad         = diasNocturnos * C.HORAS_NOC_X_DIA * C.V_HORA_NOC;
   const antiguedad          = C.SUELDO_BASICO * aniosAntiguedad * 0.01;
 
-  // Bruto (el básico cubre las horas “normales” del pool; feriado normal es renglón aparte)
   const bruto = C.SUELDO_BASICO + C.PRESENTISMO + C.VIATICOS + C.PLUS_NR + C.PLUS_ADICIONAL
               + valorExtras50 + valorFeriado100 + valorFeriadoNormal
               + nocturnidad + antiguedad;
 
-  // Remunerativo para descuentos (excluye PLUS_NR)
   const remunerativo = C.SUELDO_BASICO + C.PRESENTISMO + C.PLUS_ADICIONAL
                      + antiguedad + nocturnidad + valorExtras50 + valorFeriado100 + valorFeriadoNormal;
 
-  // Descuentos legales + sindicato (si aplica)
   let descuentos = remunerativo * 0.17; // 11 + 3 + 3
   if (sindicato){
     descuentos += remunerativo * 0.03;
   }
 
-  // AP O.S. 3% sobre SUMA NO REMUNERATIVA (PLUS_NR)
-  const Cconf = getConf();
-  const aposDesc = Cconf.PLUS_NR * 0.03;
+  // APOS 3% sobre suma no remunerativa
+  const aposDesc = C.PLUS_NR * 0.03;
   descuentos += aposDesc;
 
   const neto = bruto - descuentos;
 
-  // Detalle
   const hsNoct = diasNocturnos * C.HORAS_NOC_X_DIA;
 
   const lineasFeriadoHoras =
@@ -269,9 +226,7 @@ NETO A COBRAR: ${money(neto)}`;
 }
 
 // ===== UI wiring =====
-window.addEventListener("DOMContentLoaded", async () => {
-  try { await tryUpdateFromBlog(); } catch(_){}
-
+window.addEventListener("DOMContentLoaded", () => {
   // Modo de cálculo
   $("#btn-modo-dias").onclick  = () => { $("#modal-modo").classList.remove("show"); $("#form-dias").classList.remove("hide"); };
   $("#btn-modo-horas").onclick = () => { $("#modal-modo").classList.remove("show"); $("#form-horas").classList.remove("hide"); };
@@ -331,10 +286,10 @@ window.addEventListener("DOMContentLoaded", async () => {
     const key = getAutoScaleKey(new Date());
     resetConfToScaleKey(key);
     fillOpc();
-    $("#scaleSelect").value = key;
+    const sel = $("#scaleSelect"); if (sel) sel.value = key;
   };
   $("#btn-guardar-opc").onclick = ()=>{
-    setConf({
+    const next = {
       HORAS_EXTRAS_DESDE: parseInt($("#horasExtrasDesde").value,10),
       V_HORA:     num($("#vHora").value, DEFAULTS.V_HORA),
       V_HORA_50:  num($("#vHora50").value, DEFAULTS.V_HORA_50),
@@ -347,26 +302,30 @@ window.addEventListener("DOMContentLoaded", async () => {
       PRESENTISMO:   num($("#presentismo").value, DEFAULTS.PRESENTISMO),
       VIATICOS:      num($("#viaticos").value, DEFAULTS.VIATICOS),
       HORAS_NOC_X_DIA: parseInt($("#horasNocXD").value||DEFAULTS.HORAS_NOC_X_DIA,10)
-    });
+    };
+    setConf(next);
     $("#modal-opciones").classList.remove("show");
   };
 
-  // Cambiar escala salarial desde el spinner (carga inmediata a los campos)
-  $("#scaleSelect").addEventListener("change", (e)=>{
+  // Cambiar escala salarial desde el spinner (aplica INMEDIATO a los campos)
+  $("#scaleSelect")?.addEventListener("change", (e)=>{
     const key = e.target.value;
     if (SCALES[key]) {
-      localStorage.setItem(LS, JSON.stringify(SCALES[key]));
-      fillOpc();
+      setConf(SCALES[key]); // guardamos EXACTO
+      fillOpc();            // refrescamos inputs
     }
   });
 
   function syncScaleSelectFromConf(){
     const C = getConf();
-    // Intento simple: matchear por básico+PLUS_NR (suficiente para nuestras 3 escalas)
     const found = Object.entries(SCALES).find(([k,v]) =>
-      v.SUELDO_BASICO === C.SUELDO_BASICO && v.PLUS_NR === C.PLUS_NR
+      v.SUELDO_BASICO === C.SUELDO_BASICO &&
+      v.PLUS_NR === C.PLUS_NR &&
+      v.V_HORA === C.V_HORA &&
+      v.V_HORA_100 === C.V_HORA_100
     );
-    $("#scaleSelect").value = found ? found[0] : getAutoScaleKey(new Date());
+    const key = found ? found[0] : getAutoScaleKey(new Date());
+    const sel = $("#scaleSelect"); if (sel) sel.value = key;
   }
 
   // ===== Detalle
@@ -378,9 +337,9 @@ window.addEventListener("DOMContentLoaded", async () => {
     try{ await navigator.clipboard.writeText($("#detalle-pre").textContent); alert("Detalle copiado"); }catch(_){}
   };
 
-  // ===== Calcular (modo DÍAS) — pool = días*horasDia - (feriados*4)
+  // ===== Calcular (modo DÍAS)
   $("#btn-calcular-dias").onclick = ()=>{
-    const diasTrab = parseInt($("#diasTrabajados").value||"0",10); // totales (incluye feriados)
+    const diasTrab = parseInt($("#diasTrabajados").value||"0",10);
     const diasFeri = parseInt($("#diasFeriados").value||"0",10);
     const aniosAnt = parseInt($("#aniosAnt").value||"0",10);
     const horasDia = parseInt($("#horasPorDia").value,10);
@@ -409,9 +368,9 @@ window.addEventListener("DOMContentLoaded", async () => {
     $("#alt-dias").textContent   = "Resultado alternativo: " + money(r.neto);
   };
 
-  // ===== Calcular (modo HORAS) — pool = horasTotales - (feriados*4)
+  // ===== Calcular (modo HORAS)
   $("#btn-calcular-horas").onclick = ()=>{
-    const horasTot = parseInt($("#horasTotales").value||"0",10);   // total ingresado (incluye feriados)
+    const horasTot = parseInt($("#horasTotales").value||"0",10);
     const diasFeri = parseInt($("#diasFeriadosHoras").value||"0",10);
     const diasNoc  = parseInt($("#diasNocturnos").value||"0",10);
     const aniosAnt = parseInt($("#aniosAntHoras").value||"0",10);
@@ -419,7 +378,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     const horasPool = Math.max(0, horasTot - (diasFeri * 4));
 
-    const horasDia = 12; // para la regla de feriado 12h opción 0
+    const horasDia = 12;
     const formaF   = 0;
 
     const r = calcularSalario({
@@ -439,13 +398,8 @@ window.addEventListener("DOMContentLoaded", async () => {
     $("#bruto-horas").textContent = "Bruto: " + money(r.bruto);
   };
 
-  // Sincronizar el spinner con la conf al cargar Opciones por 1ra vez
-  // y setear automáticamente la escala vigente si no hay nada en LS
-  (function bootstrapScale(){
-    const saved = localStorage.getItem(LS);
-    if (!saved) {
-      const key = getAutoScaleKey(new Date());
-      resetConfToScaleKey(key);
-    }
-  })();
+  // Bootstrap inicial: si no hay LS, setear escala vigente
+  if (!localStorage.getItem(LS)) {
+    resetConfToScaleKey(getAutoScaleKey(new Date()));
+  }
 });
