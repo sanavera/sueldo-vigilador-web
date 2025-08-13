@@ -37,16 +37,7 @@ body{
 }
 .chip:active{transform:scale(.98)}
 
-.bar-escala{
-  display:flex; align-items:center; gap:10px; padding:10px 14px 0; max-width:720px; margin:0 auto;
-}
-.pill{
-  display:inline-block; padding:6px 10px; border:1px solid var(--line);
-  border-radius:999px; font-size:12px; color:var(--text); background:var(--tile);
-}
-.pill-adv{background:#33293a;border-color:#5c3a6a}
-
-.content{padding:12px 14px 120px; max-width:720px; margin:0 auto}
+.content{padding:18px 14px 120px; max-width:720px; margin:0 auto}
 
 .card{
   background:rgba(22,24,33,.85); border:1px solid var(--line); border-radius:var(--radius);
@@ -120,23 +111,17 @@ body{
   overflow: auto;
 }
 
-.credits{
-  margin-top:10px; background:var(--tile); border:1px solid var(--line);
-  border-radius:12px; padding:12px;
-}
-.credits-title{font-weight:700; margin-bottom:6px; color:#a9b4ff}
-.credits-list{margin:0; padding-left:18px; color:var(--muted)}
-.credits-list li{margin:4px 0}
-
 .hide{display:none !important}
+
+/* Scroll en modales grandes */
+#modal-opciones .modal-card,
+#modal-escalas .modal-card {
+  max-height: 90vh;
+  overflow-y: auto;
+}
 
 /* Responsive */
 @media (max-width:560px){
   .grid{grid-template-columns:1fr}
   .content{padding-bottom:140px}
-}
-#modal-opciones .modal-card,
-#modal-escalas .modal-card {
-  max-height: 90vh;
-  overflow-y: auto;
 }
