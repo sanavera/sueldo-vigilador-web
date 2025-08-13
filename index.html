@@ -168,12 +168,6 @@
       <div class="modal-card">
         <h2>Opciones avanzadas</h2>
         <div class="grid">
-          <!-- Spinner de Escala salarial (SOLO UNO) -->
-          <label class="field">
-            <span>▼ Escala salarial</span>
-            <select id="escalaMes"></select>
-          </label>
-
           <label class="field">
             <span>Horas extras desde</span>
             <select id="horasExtrasDesde">
@@ -200,6 +194,17 @@
           <div class="spacer"></div>
           <button id="btn-cancelar-opc" class="btn">Cancelar</button>
           <button id="btn-guardar-opc" class="btn btn-brand">Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL Acerca de (contenido se carga desde about.html) -->
+    <div class="modal" id="modal-about">
+      <div class="modal-card lg">
+        <div id="about-root" class="detalle">Cargando…</div>
+        <div class="modal-actions">
+          <div class="spacer"></div>
+          <button id="btn-cerrar-about" class="btn btn-ghost">Cerrar</button>
         </div>
       </div>
     </div>
