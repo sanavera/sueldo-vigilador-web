@@ -40,16 +40,6 @@
       <button id="btn-nuevo" class="chip">Nuevo cálculo</button>
     </header>
 
-    <!-- Barra de fuente de valores (simple y compacta) -->
-    <section class="bar-escala">
-      <label class="check">
-        <input id="chk-advanced" type="checkbox" />
-        <span>Usar opciones avanzadas</span>
-      </label>
-      <button id="btn-escalas" class="btn btn-accent">Elegir escala</button>
-      <span id="tag-escala" class="pill"></span>
-    </section>
-
     <!-- FORMULARIOS -->
     <main class="content">
       <!-- MODO DÍAS -->
@@ -107,7 +97,7 @@
 
         <div class="cta">
           <button id="btn-calcular-dias" class="btn btn-brand">Calcular sueldo</button>
-          <button id="btn-opciones" class="btn">Opciones avanzadas</button>
+          <button id="btn-opciones" class="btn btn-accent">Opciones avanzadas</button>
         </div>
 
         <div id="resultado-dias" class="resultado hide">
@@ -151,7 +141,7 @@
 
         <div class="cta">
           <button id="btn-calcular-horas" class="btn btn-brand">Calcular sueldo</button>
-          <button id="btn-opciones-2" class="btn">Opciones avanzadas</button>
+          <button id="btn-opciones-2" class="btn btn-accent">Opciones avanzadas</button>
         </div>
 
         <div id="resultado-horas" class="resultado hide">
@@ -173,11 +163,18 @@
       </div>
     </div>
 
-    <!-- MODAL Opciones avanzadas -->
+    <!-- MODAL Opciones avanzadas (ahora con spinner de escalas) -->
     <div class="modal" id="modal-opciones">
       <div class="modal-card">
         <h2>Opciones avanzadas</h2>
+
         <div class="grid">
+          <!-- NUEVO: spinner de escalas -->
+          <label class="field" style="grid-column:1/-1">
+            <span>Escala salarial</span>
+            <select id="sel-escala"></select>
+          </label>
+
           <label class="field">
             <span>Horas extras desde</span>
             <select id="horasExtrasDesde">
@@ -199,39 +196,12 @@
           <label class="field"><span>Viáticos</span><input id="viaticos" type="number" step="0.01"></label>
           <label class="field"><span>Horas nocturnas x día</span><input id="horasNocXD" type="number" step="1"></label>
         </div>
+
         <div class="modal-actions">
           <button id="btn-reset" class="btn btn-ghost">Restablecer</button>
           <div class="spacer"></div>
           <button id="btn-cancelar-opc" class="btn">Cancelar</button>
           <button id="btn-guardar-opc" class="btn btn-brand">Guardar</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- MODAL Escalas -->
-    <div class="modal" id="modal-escalas">
-      <div class="modal-card lg">
-        <h2>Elegir escala salarial</h2>
-
-        <div class="grid">
-          <label class="field" style="grid-column:1/-1">
-            <span>Mes vigente / anterior</span>
-            <select id="sel-escala"></select>
-          </label>
-        </div>
-
-        <div class="credits">
-          <div class="credits-title">Fuentes / créditos</div>
-          <ul class="credits-list">
-            <li>Voz del Vigilador — publicaciones de paritarias y cuadros de liquidación.</li>
-            <li>UPSRA — escalas y acuerdos homologados.</li>
-            <li>Otras referencias públicas de consenso del sector.</li>
-          </ul>
-        </div>
-
-        <div class="modal-actions">
-          <button id="btn-cerrar-escalas" class="btn">Cerrar</button>
-          <button id="btn-aplicar-escala" class="btn btn-accent">Aplicar</button>
         </div>
       </div>
     </div>
