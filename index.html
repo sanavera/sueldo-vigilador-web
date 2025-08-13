@@ -40,21 +40,14 @@
       <button id="btn-nuevo" class="chip">Nuevo cálculo</button>
     </header>
 
-    <!-- Selector de fuente de valores -->
-    <section class="modebar">
-      <div class="segmented">
-        <input type="radio" name="mode" id="mode-scale" value="scale" checked>
-        <label for="mode-scale">Escala salarial</label>
-        <input type="radio" name="mode" id="mode-advanced" value="advanced">
-        <label for="mode-advanced">Opciones avanzadas</label>
-      </div>
-      <div class="mode-actions">
-        <button id="btn-escalas" class="btn btn-accent">Elegir escala</button>
-        <button id="btn-opciones-top" class="btn">Opciones avanzadas</button>
-      </div>
-      <div class="mode-info">
-        <span id="tag-escala" class="pill"></span>
-      </div>
+    <!-- Barra de fuente de valores (simple y compacta) -->
+    <section class="bar-escala">
+      <label class="check">
+        <input id="chk-advanced" type="checkbox" />
+        <span>Usar opciones avanzadas</span>
+      </label>
+      <button id="btn-escalas" class="btn btn-accent">Elegir escala</button>
+      <span id="tag-escala" class="pill"></span>
     </section>
 
     <!-- FORMULARIOS -->
@@ -115,7 +108,6 @@
         <div class="cta">
           <button id="btn-calcular-dias" class="btn btn-brand">Calcular sueldo</button>
           <button id="btn-opciones" class="btn">Opciones avanzadas</button>
-          <button id="btn-escalas-2" class="btn btn-accent">Elegir escala</button>
         </div>
 
         <div id="resultado-dias" class="resultado hide">
@@ -160,7 +152,6 @@
         <div class="cta">
           <button id="btn-calcular-horas" class="btn btn-brand">Calcular sueldo</button>
           <button id="btn-opciones-2" class="btn">Opciones avanzadas</button>
-          <button id="btn-escalas-3" class="btn btn-accent">Elegir escala</button>
         </div>
 
         <div id="resultado-horas" class="resultado hide">
