@@ -163,24 +163,25 @@
       </div>
     </div>
 
-    <!-- MODAL Opciones avanzadas (con spinner Escala) -->
+    <!-- MODAL Opciones avanzadas -->
     <div class="modal" id="modal-opciones">
       <div class="modal-card">
         <h2>Opciones avanzadas</h2>
 
-        <!-- Escala salarial -->
-        <div class="grid">
+        <!-- Selector de escala salarial (JUL/AGO/SEP 2025) -->
+        <div class="grid" style="margin-bottom:6px">
           <label class="field">
             <span>▼ Escala salarial</span>
-            <select id="escalaSelect">
-              <!-- Se completa desde app.js con ESCALAS_2025 -->
+            <select id="scaleSelect">
+              <option value="2025-07">Julio 2025</option>
+              <option value="2025-08" selected>Agosto 2025</option>
+              <option value="2025-09">Septiembre 2025</option>
             </select>
           </label>
         </div>
 
-        <div class="grid" style="margin-top:8px">
-          <label class="field">
-            <span>Horas extras desde</span>
+        <div class="grid">
+          <label class="field"><span>Horas extras desde</span>
             <select id="horasExtrasDesde">
               <option value="192">192</option>
               <option value="200">200</option>
@@ -207,6 +208,10 @@
           <button id="btn-cancelar-opc" class="btn">Cancelar</button>
           <button id="btn-guardar-opc" class="btn btn-brand">Guardar</button>
         </div>
+
+        <p class="sub" style="margin-top:8px">
+          Fuentes: UPSRA / La Voz del Vigilador / acuerdos sectoriales. (Esta app solo calcula; los valores pueden actualizarse).
+        </p>
       </div>
     </div>
 
