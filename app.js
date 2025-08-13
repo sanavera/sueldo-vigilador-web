@@ -8,7 +8,7 @@
    - No se agregan horas “extra” al pool por feriado
    =========================== */
 
-/* ===== Escalas oficiales — 2025 (UPSRA) ===== */
+/* ===== Escalas oficiales — 2025 ===== */
 const SCALES = {
   "2025-07": {
     label: "Julio 2025",
@@ -39,7 +39,7 @@ function computeRatesFromBasic(basico){
   const V_HORA     = basico / 166;      // base
   const V_HORA_50  = V_HORA * 1.5;
   const V_HORA_100 = V_HORA * 2.0;
-  const V_HORA_NOC = basico * 0.001;    // 0,1% del básico
+  const V_HORA_NOC = basico * 0.001;    // 0,1% del básico por hora
   return {
     V_HORA:      round2(V_HORA),
     V_HORA_50:   round2(V_HORA_50),
@@ -64,7 +64,7 @@ const DEFAULTS = {
   V_HORA:        4526.68,
   V_HORA_50:     6790.01,
   V_HORA_100:    9053.35,
-  V_HORA_NOC:    751.74,
+  V_HORA_NOC:    751.74, // 0,1% del básico (ej. 751.74 si básico=751,735)
   HORAS_EXTRAS_DESDE: 208,
   HORAS_NOC_X_DIA: 9,
   PLUS_ADICIONAL: 0,
@@ -255,22 +255,10 @@ window.addEventListener("DOMContentLoaded", () => {
   // Modo de cálculo
   $("#btn-modo-dias").onclick  = () => { $("#modal-modo").classList.remove("show"); $("#form-dias").classList.remove("hide"); };
   $("#btn-modo-horas").onclick = () => { $("#modal-modo").classList.remove("show"); $("#form-horas").classList.remove("hide"); };
-  $("#btn-acerca").onclick = () => {
-    alert(
-"Sueldo Vigilador (versión web)\n" +
-"Adaptado desde la aplicación Android original.\n" +
-"Calcula:\n" +
-"- Horas extras al 50% y 100%\n" +
-"- Nocturnidad y adicionales\n" +
-"- Antigüedad (1% por año)\n" +
-"- Modalidad por días u horas\n" +
-"\n" +
-"Desarrollado por Sebastián Sanavera.\n" +
-"Código libre en GitHub.\n" +
-"Si querés el código para verlo/editarlo/aprender, escribime:\n" +
-"Tel: 11 3947 6360"
-    );
-  };
+
+  // Acerca de (abre modal)
+  $("#btn-acerca").onclick = () => { $("#modal-acerca").classList.add("show"); };
+  $("#btn-cerrar-acerca").onclick = () => { $("#modal-acerca").classList.remove("show"); };
 
   // Nuevo cálculo
   $("#btn-nuevo").onclick = () => location.reload();
@@ -322,6 +310,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     $("#horasExtrasDesde").value = String(C.HORAS_EXTRAS_DESDE);
     $("#vHora").value = C.V_HORA;
+    "#vHora50" in window || null; // safeguard
     $("#vHora50").value = C.V_HORA_50;
     $("#vHora100").value = C.V_HORA_100;
     $("#vHoraNoc").value = C.V_HORA_NOC;
