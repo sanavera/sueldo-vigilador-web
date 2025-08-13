@@ -8,10 +8,50 @@
    - No se agregan horas “extra” al pool por feriado
    =========================== */
 
-// --- Parámetro de cálculo de nocturnidad (por hora):
-//   0.001 = 0,1% del básico por hora  → reproduce ~$751,74 con básico $751.735
-//   0.01  = 1%   del básico por hora
-const NOCTURNIDAD_PCT = 0.001;
+// ===== Escalas incrustadas (se pueden ampliar sin tocar la lógica)
+const ESCALAS = {
+  "2025-07": {
+    label: "Julio 2025",
+    fuente: "Voz del Vigilador / UPSRA",
+    SUELDO_BASICO: 751735,
+    PRESENTISMO:   153600,
+    VIATICOS:      443215,
+    PLUS_NR:       50000,
+    VALOR_HORA_NORMAL: 4526.68,
+    VALOR_HORA_EXTRA_50: 6790.01,
+    VALOR_HORA_EXTRA_100: 9053.35
+    // Hora nocturna se calcula: 0,1% del básico por hora
+  },
+  "2025-08": {
+    label: "Agosto 2025",
+    fuente: "Voz del Vigilador / UPSRA",
+    SUELDO_BASICO: 751735,
+    PRESENTISMO:   153600,
+    VIATICOS:      443215,
+    PLUS_NR:       50000,
+    VALOR_HORA_NORMAL: 4526.68,
+    VALOR_HORA_EXTRA_50: 6790.01,
+    VALOR_HORA_EXTRA_100: 9053.35
+  }
+};
+// Helper: obtener la última key (YYYY-MM) disponible <= hoy
+function ymNow() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+}
+function pickEscalaParaHoy() {
+  const keys = Object.keys(ESCALAS).sort(); // asc
+  const today = ymNow();
+  let pick = keys[0];
+  for (const k of keys) {
+    if (k <= today) pick = k;
+  }
+  return pick;
+}
+function labelEscala(ym) {
+  const e = ESCALAS[ym];
+  return e?.label || ym;
+}
 
 // --- Valores por defecto (en localStorage)
 const DEFAULTS = {
@@ -22,16 +62,17 @@ const DEFAULTS = {
   V_HORA:        4526.68,
   V_HORA_50:     6790.01,
   V_HORA_100:    9053.35,
-  // V_HORA_NOC queda como heredado pero NO se usa en el cálculo (se calcula del básico)
-  V_HORA_NOC:    751.74,
+  V_HORA_NOC:    751.74,     // recuerda: 0,1% del básico por hora
   HORAS_EXTRAS_DESDE: 208,
   HORAS_NOC_X_DIA: 9,
   PLUS_ADICIONAL: 0,
   HORAS_EXTRA_JORNADA: 0
 };
 
-// Clave de configuración
+// Claves LS
 const LS = "sv_conf_v1";
+const LS_MODE = "sv_mode";                 // "scale" | "advanced"
+const LS_SCALE_SELECTED = "sv_scale_selected"; // "YYYY-MM"
 
 // Estado
 let DETALLE = "";
@@ -55,6 +96,7 @@ function getConf(){
 function setConf(partial){
   const next = {...getConf(), ...partial};
   localStorage.setItem(LS, JSON.stringify(next));
+  refreshTagEscala(); // para reflejar números cuando cambian
   return next;
 }
 function resetConf(){
@@ -83,17 +125,55 @@ async function tryUpdateFromBlog(){
         if(k==="VALOR_HORA_NORMAL")    patch.V_HORA  = v;
         if(k==="VALOR_HORA_EXTRA_50")  patch.V_HORA_50 = v;
         if(k==="VALOR_HORA_EXTRA_100") patch.V_HORA_100 = v;
-        if(k==="VALOR_HORA_NOCTURNA")  patch.V_HORA_NOC = v; // no se usa si NOCTURNIDAD_PCT está definido
+        if(k==="VALOR_HORA_NOCTURNA")  patch.V_HORA_NOC = v;
         if(k==="HORAS_NOCTURNAS_X_DIA") patch.HORAS_NOC_X_DIA = v|0;
       }
     }
     setConf(patch);
   }catch(e){
-    // seguimos con local
+    // seguimos con local si falla
   }
 }
 
-/* ===== LÓGICA DE CÁLCULO ===== */
+// ====== Escalas: aplicar/setear
+function aplicarEscala(ym){
+  const e = ESCALAS[ym];
+  if(!e) return false;
+  // Calculamos nocturna como 0,1% del básico por hora
+  const vNoc = Number((e.SUELDO_BASICO * 0.001).toFixed(2));
+  setConf({
+    SUELDO_BASICO: e.SUELDO_BASICO,
+    PRESENTISMO:   e.PRESENTISMO,
+    VIATICOS:      e.VIATICOS,
+    PLUS_NR:       e.PLUS_NR,
+    V_HORA:        e.VALOR_HORA_NORMAL,
+    V_HORA_50:     e.VALOR_HORA_EXTRA_50,
+    V_HORA_100:    e.VALOR_HORA_EXTRA_100,
+    V_HORA_NOC:    vNoc
+  });
+  localStorage.setItem(LS_SCALE_SELECTED, ym);
+  refreshTagEscala();
+  return true;
+}
+function refreshTagEscala(){
+  const tag = $("#tag-escala");
+  const mode = getMode();
+  if(mode === "advanced"){
+    tag.textContent = "Usando: Opciones avanzadas";
+    tag.className = "pill pill-adv";
+    return;
+  }
+  const sel = localStorage.getItem(LS_SCALE_SELECTED);
+  if(!sel){
+    tag.textContent = "Escala: (sin seleccionar)";
+    tag.className = "pill";
+    return;
+  }
+  tag.textContent = `Escala: ${labelEscala(sel)}`;
+  tag.className = "pill";
+}
+
+// ===== LÓGICA DE CÁLCULO (igual que ya venías usando, con APOS 3%) =====
 function calcularSalario({
   diasFeriados = 0,
   aniosAntiguedad = 0,
@@ -134,18 +214,14 @@ function calcularSalario({
   const horasNormales = Math.min(horasNoFeriado, C.HORAS_EXTRAS_DESDE);
   const horasExtras50 = Math.max(0, horasNoFeriado - C.HORAS_EXTRAS_DESDE);
 
-  // --- Nocturnidad: se calcula SIEMPRE desde el básico por porcentaje por hora
-  const vHoraNoct = (C.SUELDO_BASICO || 0) * NOCTURNIDAD_PCT; // $/hora nocturna
-  const nocturnidadHoras = diasNocturnos * C.HORAS_NOC_X_DIA;
-  const nocturnidad      = nocturnidadHoras * vHoraNoct;
-
   // Montos
   const valorExtras50       = horasExtras50       * vHora50Ant;
   const valorFeriado100     = horasFeriado100     * vHora100Ant;
   const valorFeriadoNormal  = horasFeriadoNormal  * vHoraAnt;   // remunerativo
+  const nocturnidad         = diasNocturnos * C.HORAS_NOC_X_DIA * C.V_HORA_NOC;
   const antiguedad          = C.SUELDO_BASICO * aniosAntiguedad * 0.01;
 
-  // Bruto (el básico cubre las horas “normales” del pool; feriado normal es renglón aparte)
+  // Bruto
   const bruto = C.SUELDO_BASICO + C.PRESENTISMO + C.VIATICOS + C.PLUS_NR + C.PLUS_ADICIONAL
               + valorExtras50 + valorFeriado100 + valorFeriadoNormal
               + nocturnidad + antiguedad;
@@ -159,14 +235,15 @@ function calcularSalario({
   if (sindicato){
     descuentos += remunerativo * 0.03;
   }
-
-  // AP O.S. 3% sobre SUMA NO REMUNERATIVA (PLUS_NR)
-  const aposDesc = C.PLUS_NR * 0.03;
+  // APOS 3% sobre suma no remunerativa (PLUS_NR)
+  const aposDesc = getConf().PLUS_NR * 0.03;
   descuentos += aposDesc;
 
   const neto = bruto - descuentos;
 
   // Detalle
+  const hsNoct = diasNocturnos * getConf().HORAS_NOC_X_DIA;
+
   const lineasFeriadoHoras =
     (horasPorDia===12 && formaPagoFeriado===0 && diasFeriados>0)
       ? `- Feriado 100%: ${horasFeriado100} hs
@@ -192,7 +269,7 @@ function calcularSalario({
 HORAS TRABAJADAS:
 - Normales (pool para corte 208): ${horasNormales} hs
 - Extras 50%: ${horasExtras50} hs
-${lineasFeriadoHoras}${nocturnidadHoras>0?`- Nocturnas: ${nocturnidadHoras} hs (valor/h: ${money(vHoraNoct)})
+${lineasFeriadoHoras}${hsNoct>0?`- Nocturnas: ${hsNoct} hs
 `:""}
 TARIFAS APLICADAS (con antigüedad ${aniosAntiguedad} años):
 - Hora normal ajustada: ${money(vHoraAnt)}
@@ -200,13 +277,13 @@ TARIFAS APLICADAS (con antigüedad ${aniosAntiguedad} años):
 - Hora extra 100% ajustada: ${money(vHora100Ant)}
 
 HABERES BRUTOS:
-- Básico: ${money(C.SUELDO_BASICO)}
-- Presentismo: ${money(C.PRESENTISMO)}
-- Viáticos: ${money(C.VIATICOS)}
-- Plus no remunerativo: ${money(C.PLUS_NR)}
-${C.PLUS_ADICIONAL>0?`- Plus adicional: ${money(C.PLUS_ADICIONAL)}
+- Básico: ${money(getConf().SUELDO_BASICO)}
+- Presentismo: ${money(getConf().PRESENTISMO)}
+- Viáticos: ${money(getConf().VIATICOS)}
+- Plus no remunerativo: ${money(getConf().PLUS_NR)}
+${getConf().PLUS_ADICIONAL>0?`- Plus adicional: ${money(getConf().PLUS_ADICIONAL)}
 `:""}- Extras 50%: ${money(valorExtras50)}
-${lineasFeriadoHaberes}${nocturnidadHoras>0?`- Nocturnidad: ${money(nocturnidad)}
+${lineasFeriadoHaberes}${hsNoct>0?`- Nocturnidad: ${money(nocturnidad)}
 `:""}- Antigüedad: ${money(antiguedad)}
 
 TOTAL BRUTO: ${money(bruto)}
@@ -227,10 +304,79 @@ NETO A COBRAR: ${money(neto)}`;
 }
 
 // ===== UI wiring =====
+function getMode(){
+  return localStorage.getItem(LS_MODE) || "scale";
+}
+function setMode(mode){
+  localStorage.setItem(LS_MODE, mode);
+  // habilitar/deshabilitar botones según modo
+  const scaleMode = mode === "scale";
+  $("#btn-escalas").disabled = !scaleMode;
+  $("#btn-escalas-2").disabled = !scaleMode;
+  $("#btn-escalas-3").disabled = !scaleMode;
+
+  $("#btn-opciones-top").disabled = scaleMode;
+  $("#btn-opciones").disabled = scaleMode;
+  $("#btn-opciones-2").disabled = scaleMode;
+
+  // tag
+  refreshTagEscala();
+}
+
+function openModal(id){ $(id).classList.add("show"); }
+function closeModal(id){ $(id).classList.remove("show"); }
+
 window.addEventListener("DOMContentLoaded", async () => {
   await tryUpdateFromBlog();
 
-  // Modo de cálculo
+  // ====== MODO Escala / Avanzadas (switch)
+  // Estado inicial del modo
+  const initMode = getMode();
+  $("#mode-scale").checked = initMode === "scale";
+  $("#mode-advanced").checked = initMode === "advanced";
+  setMode(initMode);
+
+  $("#mode-scale").addEventListener("change", e=>{
+    if(e.target.checked){ setMode("scale"); }
+  });
+  $("#mode-advanced").addEventListener("change", e=>{
+    if(e.target.checked){ setMode("advanced"); }
+  });
+
+  // ====== Escala inicial
+  // Si el usuario ya eligió una escala, respetamos; si no, elegimos por fecha
+  let sel = localStorage.getItem(LS_SCALE_SELECTED);
+  if(!sel){
+    sel = pickEscalaParaHoy();
+    aplicarEscala(sel);
+  }else{
+    aplicarEscala(sel); // para aplicar cálculo de nocturna 0,1%
+  }
+  // Cargar select del modal escalas
+  const selEscala = $("#sel-escala");
+  selEscala.innerHTML = "";
+  Object.keys(ESCALAS).sort().reverse().forEach(key=>{
+    const opt = document.createElement("option");
+    opt.value = key;
+    opt.textContent = ESCALAS[key].label || key;
+    if(key === sel) opt.selected = true;
+    selEscala.appendChild(opt);
+  });
+  refreshTagEscala();
+
+  // ====== Botones barra superior
+  $("#btn-escalas").onclick = ()=> openModal("#modal-escalas");
+  $("#btn-opciones-top").onclick = ()=> openModal("#modal-opciones");
+
+  // ====== Modales Escalas
+  $("#btn-cerrar-escalas").onclick = ()=> closeModal("#modal-escalas");
+  $("#btn-aplicar-escala").onclick = ()=>{
+    const ym = $("#sel-escala").value;
+    aplicarEscala(ym);
+    closeModal("#modal-escalas");
+  };
+
+  // ====== Modal de modo de cálculo
   $("#btn-modo-dias").onclick  = () => { $("#modal-modo").classList.remove("show"); $("#form-dias").classList.remove("hide"); };
   $("#btn-modo-horas").onclick = () => { $("#modal-modo").classList.remove("show"); $("#form-horas").classList.remove("hide"); };
   $("#btn-acerca").onclick = () => {
@@ -239,7 +385,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 "Adaptado desde la aplicación Android original.\n" +
 "Calcula:\n" +
 "- Horas extras al 50% y 100%\n" +
-"- Nocturnidad y adicionales (desde básico)\n" +
+"- Nocturnidad y adicionales\n" +
 "- Antigüedad (1% por año)\n" +
 "- Modalidad por días u horas\n" +
 "\n" +
@@ -264,16 +410,20 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // Opciones avanzadas (se siguen mostrando los valores, pero la nocturnidad se calcula del básico)
+  // ====== Abrir modales desde cada formulario (según modo)
+  $("#btn-opciones").onclick = ()=> openModal("#modal-opciones");
+  $("#btn-opciones-2").onclick = ()=> openModal("#modal-opciones");
+  $("#btn-escalas-2").onclick = ()=> openModal("#modal-escalas");
+  $("#btn-escalas-3").onclick = ()=> openModal("#modal-escalas");
+
+  // ====== Opciones avanzadas
   const fillOpc = ()=>{
     const C = getConf();
     $("#horasExtrasDesde").value = String(C.HORAS_EXTRAS_DESDE);
     $("#vHora").value = C.V_HORA;
     $("#vHora50").value = C.V_HORA_50;
     $("#vHora100").value = C.V_HORA_100;
-    // Mostrar el valor calculado actual en el input (solo informativo/edición)
-    const vHoraNoctCalc = (C.SUELDO_BASICO || 0) * NOCTURNIDAD_PCT;
-    $("#vHoraNoc").value = Math.round(vHoraNoctCalc * 100) / 100;
+    $("#vHoraNoc").value = C.V_HORA_NOC;
     $("#plusAdi").value = C.PLUS_ADICIONAL;
     $("#plusNR").value = C.PLUS_NR;
     $("#extraJornada").value = C.HORAS_EXTRA_JORNADA;
@@ -294,7 +444,6 @@ window.addEventListener("DOMContentLoaded", async () => {
       V_HORA:     num($("#vHora").value, DEFAULTS.V_HORA),
       V_HORA_50:  num($("#vHora50").value, DEFAULTS.V_HORA_50),
       V_HORA_100: num($("#vHora100").value, DEFAULTS.V_HORA_100),
-      // V_HORA_NOC se guarda si lo editan, pero el cálculo usa NOCTURNIDAD_PCT * básico
       V_HORA_NOC: num($("#vHoraNoc").value, DEFAULTS.V_HORA_NOC),
       PLUS_ADICIONAL: num($("#plusAdi").value, 0),
       PLUS_NR: num($("#plusNR").value, DEFAULTS.PLUS_NR),
@@ -307,7 +456,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     $("#modal-opciones").classList.remove("show");
   };
 
-  // Detalle
+  // ====== Detalle
   const openDetalle = ()=>{ $("#detalle-pre").textContent = DETALLE; $("#modal-detalle").classList.add("show"); };
   $("#btn-detalle-dias").onclick = openDetalle;
   $("#btn-detalle-horas").onclick = openDetalle;
@@ -316,7 +465,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     try{ await navigator.clipboard.writeText($("#detalle-pre").textContent); alert("Detalle copiado"); }catch(_){}
   };
 
-  // Calcular (modo DÍAS) — pool = días*horasDia - (feriados*4)
+  // ====== Calcular (modo DÍAS) — pool = días*horasDia - (feriados*4)
   $("#btn-calcular-dias").onclick = ()=>{
     const diasTrab = parseInt($("#diasTrabajados").value||"0",10); // totales (incluye feriados)
     const diasFeri = parseInt($("#diasFeriados").value||"0",10);
@@ -327,7 +476,6 @@ window.addEventListener("DOMContentLoaded", async () => {
     const diasNoc  = turnoNoc ? parseInt($("#diasNocturnosDias").value||String(diasTrab)||"0",10) : 0;
     const sind     = $("#sindicatoDias").checked;
 
-    // Pool para corte 208 según regla final
     const horasPool = Math.max(0, (diasTrab * horasDia) - (diasFeri * 4));
 
     const r = calcularSalario({
@@ -348,7 +496,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     $("#alt-dias").textContent   = "Resultado alternativo: " + money(r.neto);
   };
 
-  // Calcular (modo HORAS) — pool = horasTotales - (feriados*4)
+  // ====== Calcular (modo HORAS) — pool = horasTotales - (feriados*4)
   $("#btn-calcular-horas").onclick = ()=>{
     const horasTot = parseInt($("#horasTotales").value||"0",10);   // total ingresado (incluye feriados)
     const diasFeri = parseInt($("#diasFeriadosHoras").value||"0",10);
@@ -356,11 +504,9 @@ window.addEventListener("DOMContentLoaded", async () => {
     const aniosAnt = parseInt($("#aniosAntHoras").value||"0",10);
     const sind     = $("#sindicatoHoras").checked;
 
-    // Regla: descontar sólo 4h por feriado del pool
     const horasPool = Math.max(0, horasTot - (diasFeri * 4));
 
-    // Para la regla de feriado 12h opción 0
-    const horasDia = 12;
+    const horasDia = 12;  // para la regla de feriado 12h opción 0
     const formaF   = 0;
 
     const r = calcularSalario({
