@@ -163,18 +163,22 @@
       </div>
     </div>
 
-    <!-- MODAL Opciones avanzadas (ahora con spinner de escalas) -->
+    <!-- MODAL Opciones avanzadas (con spinner Escala) -->
     <div class="modal" id="modal-opciones">
       <div class="modal-card">
         <h2>Opciones avanzadas</h2>
 
+        <!-- Escala salarial -->
         <div class="grid">
-          <!-- NUEVO: spinner de escalas -->
-          <label class="field" style="grid-column:1/-1">
-            <span>Escala salarial</span>
-            <select id="sel-escala"></select>
+          <label class="field">
+            <span>▼ Escala salarial</span>
+            <select id="escalaSelect">
+              <!-- Se completa desde app.js con ESCALAS_2025 -->
+            </select>
           </label>
+        </div>
 
+        <div class="grid" style="margin-top:8px">
           <label class="field">
             <span>Horas extras desde</span>
             <select id="horasExtrasDesde">
