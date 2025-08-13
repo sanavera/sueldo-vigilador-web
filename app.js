@@ -8,11 +8,10 @@
    - No se agregan horas “extra” al pool por feriado
    =========================== */
 
-// ===== Escalas incrustadas (Jul/Ag 2025 con valores DISTINTOS)
+// ===== Escalas incrustadas (ejemplo: Jul/Ago 2025 con valores distintos)
 const ESCALAS = {
   "2025-07": {
     label: "Julio 2025",
-    fuente: "Voz del Vigilador / UPSRA",
     SUELDO_BASICO: 745030,
     PRESENTISMO:   153600,
     VIATICOS:      435580,
@@ -20,11 +19,9 @@ const ESCALAS = {
     VALOR_HORA_NORMAL: 4583.01,
     VALOR_HORA_EXTRA_50: 6874.52,
     VALOR_HORA_EXTRA_100: 9166.03
-    // V_HORA_NOC = 0,1% del básico por hora (se calcula más abajo)
   },
   "2025-08": {
     label: "Agosto 2025",
-    fuente: "Voz del Vigilador / UPSRA",
     SUELDO_BASICO: 751735,
     PRESENTISMO:   153600,
     VIATICOS:      443215,
@@ -47,8 +44,7 @@ function pickEscalaParaHoy() {
   return pick;
 }
 function labelEscala(ym) {
-  const e = ESCALAS[ym];
-  return e?.label || ym;
+  return ESCALAS[ym]?.label || ym;
 }
 
 // --- Valores por defecto (en localStorage)
@@ -60,7 +56,7 @@ const DEFAULTS = {
   V_HORA:        4526.68,
   V_HORA_50:     6790.01,
   V_HORA_100:    9053.35,
-  V_HORA_NOC:     751.74,  // 0,1% del básico por hora
+  V_HORA_NOC:     751.74,  // 0,1% del básico por hora (editable)
   HORAS_EXTRAS_DESDE: 208,
   HORAS_NOC_X_DIA: 9,
   PLUS_ADICIONAL: 0,
@@ -69,8 +65,7 @@ const DEFAULTS = {
 
 // Claves LS
 const LS = "sv_conf_v1";
-const LS_MODE = "sv_mode";                    // "scale" | "advanced"
-const LS_SCALE_SELECTED = "sv_scale_selected";// "YYYY-MM"
+const LS_SCALE_SELECTED = "sv_scale_selected"; // "YYYY-MM"
 
 // Estado
 let DETALLE = "";
@@ -94,10 +89,9 @@ function getConf(){
 function setConf(partial){
   const next = {...getConf(), ...partial};
   localStorage.setItem(LS, JSON.stringify(next));
-  refreshTagEscala();
   return next;
 }
-function resetConf(){
+function resetConfToDefaults(){
   localStorage.setItem(LS, JSON.stringify(DEFAULTS));
 }
 
@@ -129,60 +123,43 @@ async function tryUpdateFromBlog(){
     }
     setConf(patch);
   }catch(e){
-    // seguimos con local si falla
+    // si falla, seguimos con local
   }
 }
 
-// ===== Escalas
-function aplicarEscala(ym){
-  const e = ESCALAS[ym];
-  if(!e) return false;
-  const vNoc = Number((e.SUELDO_BASICO * 0.001).toFixed(2)); // 0,1% del básico por hora
-  setConf({
-    SUELDO_BASICO: e.SUELDO_BASICO,
-    PRESENTISMO:   e.PRESENTISMO,
-    VIATICOS:      e.VIATICOS,
-    PLUS_NR:       e.PLUS_NR,
-    V_HORA:        e.VALOR_HORA_NORMAL,
-    V_HORA_50:     e.VALOR_HORA_EXTRA_50,
-    V_HORA_100:    e.VALOR_HORA_EXTRA_100,
-    V_HORA_NOC:    vNoc
+/* ===== Escalas: aplican sobre el formulario de opciones avanzadas ===== */
+function llenarSelectEscalas(){
+  const selEsc = $("#sel-escala");
+  selEsc.innerHTML = "";
+  Object.keys(ESCALAS).sort().reverse().forEach(key=>{
+    const opt = document.createElement("option");
+    opt.value = key;
+    opt.textContent = labelEscala(key);
+    selEsc.appendChild(opt);
   });
+}
+function aplicarEscalaEnFormulario(ym){
+  const e = ESCALAS[ym];
+  if(!e) return;
+  // Calculamos hora nocturna = 0,1% del básico por hora
+  const vNoc = Number((e.SUELDO_BASICO * 0.001).toFixed(2));
+
+  // Rellenamos los inputs del modal (NO guardamos aún)
+  $("#sBasico").value      = e.SUELDO_BASICO;
+  $("#presentismo").value  = e.PRESENTISMO;
+  $("#viaticos").value     = e.VIATICOS;
+  $("#plusNR").value       = e.PLUS_NR;
+
+  $("#vHora").value   = e.VALOR_HORA_NORMAL;
+  $("#vHora50").value = e.VALOR_HORA_EXTRA_50;
+  $("#vHora100").value= e.VALOR_HORA_EXTRA_100;
+
+  $("#vHoraNoc").value = vNoc;
+
+  // Por si el usuario tenía otros campos
+  // (no tocamos: HORAS_EXTRAS_DESDE, PLUS_ADICIONAL, HORAS_EXTRA_JORNADA, HORAS_NOC_X_DIA)
   localStorage.setItem(LS_SCALE_SELECTED, ym);
-  refreshTagEscala();
-  return true;
 }
-function refreshTagEscala(){
-  const tag = $("#tag-escala");
-  const mode = getMode();
-  if(mode === "advanced"){
-    tag.textContent = "Usando Opciones avanzadas";
-    tag.className = "pill pill-adv";
-    return;
-  }
-  const sel = localStorage.getItem(LS_SCALE_SELECTED);
-  if(!sel){
-    tag.textContent = "Escala: (sin seleccionar)";
-    tag.className = "pill";
-    return;
-  }
-  tag.textContent = `Escala: ${labelEscala(sel)}`;
-  tag.className = "pill";
-}
-
-// ===== Modo (switch simple)
-function getMode(){
-  return localStorage.getItem(LS_MODE) || "scale";
-}
-function setMode(mode){
-  localStorage.setItem(LS_MODE, mode);
-  const scaleMode = mode === "scale";
-  $("#btn-escalas").disabled = !scaleMode;
-  refreshTagEscala();
-}
-
-function openModal(id){ $(id).classList.add("show"); }
-function closeModal(id){ $(id).classList.remove("show"); }
 
 /* ===== LÓGICA DE CÁLCULO (incluye APOS 3%) ===== */
 function calcularSalario({
@@ -234,15 +211,15 @@ function calcularSalario({
   const remunerativo = C.SUELDO_BASICO + C.PRESENTISMO + C.PLUS_ADICIONAL
                      + antiguedad + nocturnidad + valorExtras50 + valorFeriado100 + valorFeriadoNormal;
 
-  let descuentos = remunerativo * 0.17;
+  let descuentos = remunerativo * 0.17; // 11 + 3 + 3
   if (sindicato){ descuentos += remunerativo * 0.03; }
 
-  const aposDesc = C.PLUS_NR * 0.03; // APOS 3% sobre no remunerativo
+  const aposDesc = getConf().PLUS_NR * 0.03; // APOS 3% sobre no remunerativo
   descuentos += aposDesc;
 
   const neto = bruto - descuentos;
 
-  const hsNoct = diasNocturnos * C.HORAS_NOC_X_DIA;
+  const hsNoct = diasNocturnos * getConf().HORAS_NOC_X_DIA;
 
   const lineasFeriadoHoras =
     (horasPorDia===12 && formaPagoFeriado===0 && diasFeriados>0)
@@ -277,11 +254,11 @@ TARIFAS APLICADAS (con antigüedad ${aniosAntiguedad} años):
 - Hora extra 100% ajustada: ${money(vHora100Ant)}
 
 HABERES BRUTOS:
-- Básico: ${money(C.SUELDO_BASICO)}
-- Presentismo: ${money(C.PRESENTISMO)}
-- Viáticos: ${money(C.VIATICOS)}
-- Plus no remunerativo: ${money(C.PLUS_NR)}
-${C.PLUS_ADICIONAL>0?`- Plus adicional: ${money(C.PLUS_ADICIONAL)}
+- Básico: ${money(getConf().SUELDO_BASICO)}
+- Presentismo: ${money(getConf().PRESENTISMO)}
+- Viáticos: ${money(getConf().VIATICOS)}
+- Plus no remunerativo: ${money(getConf().PLUS_NR)}
+${getConf().PLUS_ADICIONAL>0?`- Plus adicional: ${money(getConf().PLUS_ADICIONAL)}
 `:""}- Extras 50%: ${money(valorExtras50)}
 ${lineasFeriadoHaberes}${hsNoct>0?`- Nocturnidad: ${money(nocturnidad)}
 `:""}- Antigüedad: ${money(antiguedad)}
@@ -307,61 +284,19 @@ NETO A COBRAR: ${money(neto)}`;
 window.addEventListener("DOMContentLoaded", async () => {
   await tryUpdateFromBlog();
 
-  // Modo switch simple
-  const initMode = localStorage.getItem(LS_MODE) || "scale";
-  $("#chk-advanced").checked = (initMode === "advanced");
-  setMode(initMode);
-
-  $("#chk-advanced").addEventListener("change", (e)=>{
-    setMode(e.target.checked ? "advanced" : "scale");
-  });
-
-  // Escala inicial
-  let sel = localStorage.getItem(LS_SCALE_SELECTED);
-  if(!sel){ sel = pickEscalaParaHoy(); }
-  aplicarEscala(sel);
-
-  // Llenar select escalas
-  const selEscala = $("#sel-escala");
-  selEscala.innerHTML = "";
-  Object.keys(ESCALAS).sort().reverse().forEach(key=>{
-    const opt = document.createElement("option");
-    opt.value = key;
-    opt.textContent = ESCALAS[key].label || key;
-    if(key === sel) opt.selected = true;
-    selEscala.appendChild(opt);
-  });
-  refreshTagEscala();
-
-  // Abrir modales
-  $("#btn-escalas").onclick = ()=> openModal("#modal-escalas");
-  $("#btn-opciones").onclick = ()=> openModal("#modal-opciones");
-  $("#btn-opciones-2").onclick = ()=> openModal("#modal-opciones");
-
-  // Modal escalas
-  $("#btn-cerrar-escalas").onclick = ()=> closeModal("#modal-escalas");
-  $("#btn-aplicar-escala").onclick = ()=>{
-    const ym = $("#sel-escala").value;
-    aplicarEscala(ym);
-    closeModal("#modal-escalas");
-  };
-
-  // Modal modo de cálculo
+  // Modo de cálculo (como antes)
   $("#btn-modo-dias").onclick  = () => { $("#modal-modo").classList.remove("show"); $("#form-dias").classList.remove("hide"); };
   $("#btn-modo-horas").onclick = () => { $("#modal-modo").classList.remove("show"); $("#form-horas").classList.remove("hide"); };
   $("#btn-acerca").onclick = () => {
     alert(
 "Sueldo Vigilador (versión web)\n" +
-"Adaptado desde la aplicación Android original.\n" +
 "Calcula:\n" +
 "- Horas extras al 50% y 100%\n" +
-"- Nocturnidad y adicionales (0,1% del básico por hora)\n" +
+"- Nocturnidad (0,1% del básico por hora)\n" +
 "- Antigüedad (1% por año)\n" +
 "- Modalidad por días u horas\n" +
 "\n" +
-"Desarrollado por Sebastián Sanavera.\n" +
-"Código libre en GitHub.\n" +
-"Tel: 11 3947 6360"
+"Desarrollado por Sebastián Sanavera."
     );
   };
 
@@ -379,16 +314,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // Detalle
-  const openDetalle = ()=>{ $("#detalle-pre").textContent = DETALLE; $("#modal-detalle").classList.add("show"); };
-  $("#btn-detalle-dias").onclick = openDetalle;
-  $("#btn-detalle-horas").onclick = openDetalle;
-  $("#btn-cerrar-detalle").onclick = ()=>$("#modal-detalle").classList.remove("show");
-  $("#btn-copiar").onclick = async ()=>{
-    try{ await navigator.clipboard.writeText($("#detalle-pre").textContent); alert("Detalle copiado"); }catch(_){}
-  };
-
-  // Guardar opciones avanzadas
+  // ===== Opciones avanzadas =====
   const fillOpc = ()=>{
     const C = getConf();
     $("#horasExtrasDesde").value = String(C.HORAS_EXTRAS_DESDE);
@@ -403,14 +329,37 @@ window.addEventListener("DOMContentLoaded", async () => {
     $("#presentismo").value = C.PRESENTISMO;
     $("#viaticos").value = C.VIATICOS;
     $("#horasNocXD").value = C.HORAS_NOC_X_DIA;
+
+    // Lleno/selecciono escalas
+    llenarSelectEscalas();
+    const selGuardada = localStorage.getItem(LS_SCALE_SELECTED);
+    const aUsar = selGuardada || pickEscalaParaHoy();
+    $("#sel-escala").value = aUsar;
   };
+
   const openOpc = ()=>{ fillOpc(); $("#modal-opciones").classList.add("show"); };
   $("#btn-opciones").onclick = openOpc;
   $("#btn-opciones-2").onclick = openOpc;
 
+  // Al cambiar la escala en el spinner: solo rellena los inputs (no guarda)
+  $("#sel-escala").addEventListener("change", (e)=>{
+    aplicarEscalaEnFormulario(e.target.value);
+  });
+
   $("#btn-cancelar-opc").onclick = ()=>$("#modal-opciones").classList.remove("show");
-  $("#btn-reset").onclick = ()=>{ resetConf(); fillOpc(); };
+
+  // Resetear: detecta vigente y rellena (sin guardar)
+  $("#btn-reset").onclick = ()=>{
+    const vigente = pickEscalaParaHoy();
+    $("#sel-escala").value = vigente;
+    aplicarEscalaEnFormulario(vigente);
+  };
+
+  // Guardar: persiste TODO lo que esté en el formulario (incluida la escala elegida)
   $("#btn-guardar-opc").onclick = ()=>{
+    const ym = $("#sel-escala").value;
+    localStorage.setItem(LS_SCALE_SELECTED, ym);
+
     setConf({
       HORAS_EXTRAS_DESDE: parseInt($("#horasExtrasDesde").value,10),
       V_HORA:     num($("#vHora").value, DEFAULTS.V_HORA),
@@ -426,6 +375,15 @@ window.addEventListener("DOMContentLoaded", async () => {
       HORAS_NOC_X_DIA: parseInt($("#horasNocXD").value||DEFAULTS.HORAS_NOC_X_DIA,10)
     });
     $("#modal-opciones").classList.remove("show");
+  };
+
+  // Detalle
+  const openDetalle = ()=>{ $("#detalle-pre").textContent = DETALLE; $("#modal-detalle").classList.add("show"); };
+  $("#btn-detalle-dias").onclick = openDetalle;
+  $("#btn-detalle-horas").onclick = openDetalle;
+  $("#btn-cerrar-detalle").onclick = ()=>$("#modal-detalle").classList.remove("show");
+  $("#btn-copiar").onclick = async ()=>{
+    try{ await navigator.clipboard.writeText($("#detalle-pre").textContent); alert("Detalle copiado"); }catch(_){}
   };
 
   // Calcular (modo DÍAS) — pool = días*horasDia - (feriados*4)
@@ -488,4 +446,9 @@ window.addEventListener("DOMContentLoaded", async () => {
     $("#neto-horas").textContent  = "NETO A COBRAR: " + money(r.neto);
     $("#bruto-horas").textContent = "Bruto: " + money(r.bruto);
   };
+
+  // Inicializo la escala del formulario al abrir por 1ra vez (por si tocan Reset sin cambiar)
+  // No guardo nada acá; sólo dejo preparado el modal.
+  const selIni = localStorage.getItem(LS_SCALE_SELECTED) || pickEscalaParaHoy();
+  localStorage.setItem(LS_SCALE_SELECTED, selIni);
 });
