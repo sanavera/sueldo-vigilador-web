@@ -40,18 +40,21 @@
       <button id="btn-nuevo" class="chip">Nuevo cálculo</button>
     </header>
 
-    <!-- SWITCH de modo de parámetros (Escala / Avanzadas) -->
-    <section class="card" id="mode-bar" style="margin: 12px 12px 0;">
-      <div class="segmented" id="modeToggle" role="tablist" aria-label="Fuente de parámetros">
-        <input type="radio" name="modeSource" id="mode-escala" value="escala" checked />
-        <label for="mode-escala" role="tab" aria-controls="tab-escala">Escala salarial</label>
-
-        <input type="radio" name="modeSource" id="mode-avanzadas" value="avanzadas" />
-        <label for="mode-avanzadas" role="tab" aria-controls="tab-avanzadas">Opciones avanzadas</label>
+    <!-- Selector de fuente de valores -->
+    <section class="modebar">
+      <div class="segmented">
+        <input type="radio" name="mode" id="mode-scale" value="scale" checked>
+        <label for="mode-scale">Escala salarial</label>
+        <input type="radio" name="mode" id="mode-advanced" value="advanced">
+        <label for="mode-advanced">Opciones avanzadas</label>
       </div>
-      <p class="sub" style="margin-top:8px">
-        Elegí si querés usar una <strong>escala salarial</strong> precargada (vigente o anterior) o tus <strong>opciones avanzadas</strong> personalizadas.
-      </p>
+      <div class="mode-actions">
+        <button id="btn-escalas" class="btn btn-accent">Elegir escala</button>
+        <button id="btn-opciones-top" class="btn">Opciones avanzadas</button>
+      </div>
+      <div class="mode-info">
+        <span id="tag-escala" class="pill"></span>
+      </div>
     </section>
 
     <!-- FORMULARIOS -->
@@ -111,8 +114,8 @@
 
         <div class="cta">
           <button id="btn-calcular-dias" class="btn btn-brand">Calcular sueldo</button>
-          <button id="btn-opciones" class="btn btn-accent">Opciones avanzadas</button>
-          <button id="btn-escala" class="btn btn-ghost">Elegir escala</button>
+          <button id="btn-opciones" class="btn">Opciones avanzadas</button>
+          <button id="btn-escalas-2" class="btn btn-accent">Elegir escala</button>
         </div>
 
         <div id="resultado-dias" class="resultado hide">
@@ -156,8 +159,8 @@
 
         <div class="cta">
           <button id="btn-calcular-horas" class="btn btn-brand">Calcular sueldo</button>
-          <button id="btn-opciones-2" class="btn btn-accent">Opciones avanzadas</button>
-          <button id="btn-escala-2" class="btn btn-ghost">Elegir escala</button>
+          <button id="btn-opciones-2" class="btn">Opciones avanzadas</button>
+          <button id="btn-escalas-3" class="btn btn-accent">Elegir escala</button>
         </div>
 
         <div id="resultado-horas" class="resultado hide">
@@ -214,37 +217,30 @@
       </div>
     </div>
 
-    <!-- MODAL Escala salarial (nuevo) -->
-    <div class="modal" id="modal-escala" aria-hidden="true">
+    <!-- MODAL Escalas -->
+    <div class="modal" id="modal-escalas">
       <div class="modal-card lg">
-        <h2>Elegí la escala salarial</h2>
-        <p class="sub" style="margin-bottom:12px">
-          Seleccioná el período para usar sus valores oficiales en el cálculo. La app, por defecto, sugiere la escala vigente según la fecha de hoy.
-        </p>
+        <h2>Elegir escala salarial</h2>
 
         <div class="grid">
-          <label class="field">
-            <span>▼ Período (mes / año)</span>
-            <select id="escalaSpinner">
-              <!-- Se completa por JavaScript con las escalas disponibles -->
-              <option value="" disabled selected>Seleccioná una escala…</option>
-            </select>
+          <label class="field" style="grid-column:1/-1">
+            <span>Mes vigente / anterior</span>
+            <select id="sel-escala"></select>
           </label>
         </div>
 
-        <div class="modal-actions" style="margin-top: 8px">
-          <button id="btn-escala-cerrar" class="btn">Cerrar</button>
-          <button id="btn-escala-aplicar" class="btn btn-brand">Aplicar</button>
+        <div class="credits">
+          <div class="credits-title">Fuentes / créditos</div>
+          <ul class="credits-list">
+            <li>Voz del Vigilador — publicaciones de paritarias y cuadros de liquidación.</li>
+            <li>UPSRA — escalas y acuerdos homologados.</li>
+            <li>Otras referencias públicas de consenso del sector.</li>
+          </ul>
         </div>
 
-        <hr style="opacity:.2;margin:16px 0">
-
-        <div id="escalaFuentes" class="sub" style="font-size:12px; line-height:1.4">
-          <strong>Fuentes:</strong><br>
-          • La Voz del Vigilador (publicaciones de escalas y acuerdos).<br>
-          • UPSRA (comunicados oficiales y paritarias).<br>
-          • Boletines/actas paritarias, cuando corresponde.<br>
-          <em>Nota:</em> Las escalas pueden tener componentes remunerativos y no remunerativos, con vigencia por mes. Verificamos fechas y vigencia antes de publicarlas.
+        <div class="modal-actions">
+          <button id="btn-cerrar-escalas" class="btn">Cerrar</button>
+          <button id="btn-aplicar-escala" class="btn btn-accent">Aplicar</button>
         </div>
       </div>
     </div>
