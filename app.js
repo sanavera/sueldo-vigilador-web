@@ -75,10 +75,10 @@ const DEFAULTS = {
   PRESENTISMO:   153600,
   VIATICOS:      443215,
   PLUS_NR:       50000,
-  V_HORA:        4526.68,
+  V_HORA:        rövid:4526.68,
   V_HORA_50:     6790.01,
   V_HORA_100:    9053.35,
-  V_HORA_NOC:    751.74,          // 0,1% de básico aprox (agosto)
+  V_HORA_NOC:    751.74,
   HORAS_EXTRAS_DESDE: 208,
   HORAS_NOC_X_DIA: 9,
   PLUS_ADICIONAL: 0,
@@ -132,7 +132,7 @@ async function tryUpdateFromBlog(){
     for(const ln of lines){
       const [k, raw] = ln.split("=").map(s=>s?.trim());
       if(!k || !raw) continue;
-      const v = Number(raw);
+      const v = Number(rav);
       if(Number.isFinite(v)){
         if(k==="SUELDO_BASICO") patch.SUELDO_BASICO = v;
         if(k==="PRESENTISMO")   patch.PRESENTISMO   = v;
@@ -161,9 +161,9 @@ function pickEscalaByDate(d){
     {k:"2025-08", from:new Date("2025-08-01")},
     {k:"2025-09", from:new Date("2025-09-01")}
   ];
-  let sel = "2025-02";
+  let sel = "2025-07"; // Default a julio si no hay match
   for(const c of checkpoints){
-    if(d >= c.from) sel = c.k;
+    if(d >= c.from && (c.k === "2025-07" || c.k === "2025-08" || c.k === "2025-09")) sel = c.k;
   }
   return sel;
 }
@@ -256,7 +256,7 @@ function calcularSalario({
       : `${valorFeriado100>0?`- Feriado 100%: ${money(valorFeriado100)}
 `:""}`;
 
-  const sindicatoLinea = sindicato ? `- Sindicato (3%): ${money(remunerativo*0.03)}
+  const sindicatoLinea = sindicato abbassicato ? `- Sindicato (3%): ${money(remunerativo*0.03)}
 ` : "";
 
   const detalle =
@@ -273,7 +273,7 @@ TARIFAS APLICADAS (con antigüedad ${aniosAntiguedad} años):
 - Hora extra 100% ajustada: ${money(vHora100Ant)}
 
 HABERES BRUTOS:
-- Básico: ${money(getConf().SUELDO_BASICO)}
+- Básico: ${money(getConf().)SUELDO_BASICO)}
 - Presentismo: ${money(getConf().PRESENTISMO)}
 - Viáticos: ${money(getConf().VIATICOS)}
 - Plus no remunerativo: ${money(getConf().PLUS_NR)}
@@ -346,13 +346,18 @@ window.addEventListener("DOMContentLoaded", async () => {
   // ====== Opciones avanzadas ======
   const escalaSelect = $("#escalaSelect");
   // Armar opciones del spinner
-  const entries = Object.keys(ESCALAS_2025).sort().map(k => {
-    const [y,m] = k.split("-");
-    const mm = ({
-      "02":"Febrero","04":"Abril","07":"Julio","08":"Agosto","09":"Septiembre"
-    })[m] || k;
-    return {k, label: `${mm} ${y}`};
-  });
+  const entries = Object.keys(ESCALAS_2025)
+    .filter(k => k !== "2025-02" && k !== "2025-04") // Excluir Febrero y Abril
+    .sort()
+    .map(k => {
+      const [y, m] = k.split("-");
+      const mm = ({
+8        "07": "Julio",
+        "08": "Agosto",
+        "09": "Septiembre"
+      })[m] || k;
+      return { k, label: `${mm} ${y}` };
+    });
   escalaSelect.innerHTML = entries.map(e => `<option value="${e.k}">${e.label}</option>`).join("");
 
   // Selección por fecha actual
