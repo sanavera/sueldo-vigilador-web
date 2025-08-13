@@ -40,6 +40,20 @@
       <button id="btn-nuevo" class="chip">Nuevo cálculo</button>
     </header>
 
+    <!-- SWITCH de modo de parámetros (Escala / Avanzadas) -->
+    <section class="card" id="mode-bar" style="margin: 12px 12px 0;">
+      <div class="segmented" id="modeToggle" role="tablist" aria-label="Fuente de parámetros">
+        <input type="radio" name="modeSource" id="mode-escala" value="escala" checked />
+        <label for="mode-escala" role="tab" aria-controls="tab-escala">Escala salarial</label>
+
+        <input type="radio" name="modeSource" id="mode-avanzadas" value="avanzadas" />
+        <label for="mode-avanzadas" role="tab" aria-controls="tab-avanzadas">Opciones avanzadas</label>
+      </div>
+      <p class="sub" style="margin-top:8px">
+        Elegí si querés usar una <strong>escala salarial</strong> precargada (vigente o anterior) o tus <strong>opciones avanzadas</strong> personalizadas.
+      </p>
+    </section>
+
     <!-- FORMULARIOS -->
     <main class="content">
       <!-- MODO DÍAS -->
@@ -98,6 +112,7 @@
         <div class="cta">
           <button id="btn-calcular-dias" class="btn btn-brand">Calcular sueldo</button>
           <button id="btn-opciones" class="btn btn-accent">Opciones avanzadas</button>
+          <button id="btn-escala" class="btn btn-ghost">Elegir escala</button>
         </div>
 
         <div id="resultado-dias" class="resultado hide">
@@ -142,6 +157,7 @@
         <div class="cta">
           <button id="btn-calcular-horas" class="btn btn-brand">Calcular sueldo</button>
           <button id="btn-opciones-2" class="btn btn-accent">Opciones avanzadas</button>
+          <button id="btn-escala-2" class="btn btn-ghost">Elegir escala</button>
         </div>
 
         <div id="resultado-horas" class="resultado hide">
@@ -194,6 +210,41 @@
           <div class="spacer"></div>
           <button id="btn-cancelar-opc" class="btn">Cancelar</button>
           <button id="btn-guardar-opc" class="btn btn-brand">Guardar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL Escala salarial (nuevo) -->
+    <div class="modal" id="modal-escala" aria-hidden="true">
+      <div class="modal-card lg">
+        <h2>Elegí la escala salarial</h2>
+        <p class="sub" style="margin-bottom:12px">
+          Seleccioná el período para usar sus valores oficiales en el cálculo. La app, por defecto, sugiere la escala vigente según la fecha de hoy.
+        </p>
+
+        <div class="grid">
+          <label class="field">
+            <span>▼ Período (mes / año)</span>
+            <select id="escalaSpinner">
+              <!-- Se completa por JavaScript con las escalas disponibles -->
+              <option value="" disabled selected>Seleccioná una escala…</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="modal-actions" style="margin-top: 8px">
+          <button id="btn-escala-cerrar" class="btn">Cerrar</button>
+          <button id="btn-escala-aplicar" class="btn btn-brand">Aplicar</button>
+        </div>
+
+        <hr style="opacity:.2;margin:16px 0">
+
+        <div id="escalaFuentes" class="sub" style="font-size:12px; line-height:1.4">
+          <strong>Fuentes:</strong><br>
+          • La Voz del Vigilador (publicaciones de escalas y acuerdos).<br>
+          • UPSRA (comunicados oficiales y paritarias).<br>
+          • Boletines/actas paritarias, cuando corresponde.<br>
+          <em>Nota:</em> Las escalas pueden tener componentes remunerativos y no remunerativos, con vigencia por mes. Verificamos fechas y vigencia antes de publicarlas.
         </div>
       </div>
     </div>
