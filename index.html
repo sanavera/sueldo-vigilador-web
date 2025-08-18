@@ -11,66 +11,6 @@
   <meta name="theme-color" content="#161821" media="(prefers-color-scheme: dark)">
 
   <link rel="stylesheet" href="style.css" />
-
-  <style>
-    /* 🌐 Burbuja flotante estilo Messenger */
-    .chat-bubble {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      background: #0084ff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-      z-index: 1000;
-    }
-    .chat-bubble img {
-      width: 32px;
-      height: 32px;
-    }
-
-    /* Modal del bot */
-    #modal-bot {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right:0;
-      bottom:0;
-      background: rgba(0,0,0,0.6);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 2000;
-    }
-    #modal-bot.show {
-      display: flex;
-    }
-    #modal-bot .modal-card {
-      width: 90%;
-      height: 90%;
-      background: #fff;
-      border-radius: 12px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-    #modal-bot iframe {
-      flex: 1;
-      border: none;
-      width: 100%;
-      height: 100%;
-    }
-    #modal-bot .modal-actions {
-      background: #f1f1f1;
-      padding: 8px;
-      text-align: right;
-    }
-  </style>
 </head>
 <body>
   <div id="app">
@@ -102,22 +42,216 @@
 
     <!-- FORMULARIOS -->
     <main class="content">
-      <!-- ... (tu contenido igual, no lo toqué) ... -->
+      <!-- MODO DÍAS -->
+      <section id="form-dias" class="card hide">
+        <div class="grid">
+          <label class="field">
+            <span>Días trabajados</span>
+            <input id="diasTrabajados" type="number" min="0" inputmode="numeric" placeholder="Ej. 21" />
+          </label>
+
+          <label class="field">
+            <span>▼ Horas por día</span>
+            <select id="horasPorDia">
+              <option value="12">12 horas</option>
+              <option value="10">10 horas</option>
+              <option value="8">8 horas</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Días feriados</span>
+            <input id="diasFeriados" type="number" min="0" inputmode="numeric" placeholder="Ej. 1" />
+          </label>
+
+          <label class="field">
+            <span>▼ Pago feriado</span>
+            <select id="pagoFeriado">
+              <option value="0">4h al 100% + 8h normal (12h)</option>
+              <option value="1">12h al 100% (12h)</option>
+              <option value="2">Jornada completa al 100% (8/10h)</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Años de antigüedad</span>
+            <input id="aniosAnt" type="number" min="0" inputmode="numeric" placeholder="Ej. 1" />
+          </label>
+
+          <div class="checks">
+            <label class="check">
+              <input id="turnoNocheDias" type="checkbox" />
+              <span>Turno noche</span>
+            </label>
+            <label class="check">
+              <input id="sindicatoDias" type="checkbox" />
+              <span>Sindicato</span>
+            </label>
+          </div>
+
+          <label id="diasNocturnosWrap" class="field hide">
+            <span>Días nocturnos</span>
+            <input id="diasNocturnosDias" type="number" min="0" inputmode="numeric" placeholder="Igual a días trabajados" />
+          </label>
+        </div>
+
+        <div class="cta">
+          <button id="btn-calcular-dias" class="btn btn-brand">Calcular sueldo</button>
+          <button id="btn-opciones" class="btn btn-accent">Opciones avanzadas</button>
+        </div>
+
+        <div id="resultado-dias" class="resultado hide">
+          <div class="neto" id="neto-dias"></div>
+          <div class="bruto" id="bruto-dias"></div>
+          <div class="alt" id="alt-dias"></div>
+          <button id="btn-detalle-dias" class="btn btn-ghost">Ver detalle completo</button>
+        </div>
+      </section>
+
+      <!-- MODO HORAS -->
+      <section id="form-horas" class="card hide">
+        <div class="grid">
+          <label class="field">
+            <span>Horas totales del mes</span>
+            <input id="horasTotales" type="number" min="0" inputmode="numeric" placeholder="Ej. 240" />
+          </label>
+
+          <label class="field">
+            <span>Días feriados</span>
+            <input id="diasFeriadosHoras" type="number" min="0" inputmode="numeric" placeholder="Ej. 1" />
+          </label>
+
+          <label class="field">
+            <span>Días nocturnos</span>
+            <input id="diasNocturnos" type="number" min="0" inputmode="numeric" placeholder="Ej. 20" />
+          </label>
+
+          <label class="field">
+            <span>Años de antigüedad</span>
+            <input id="aniosAntHoras" type="number" min="0" inputmode="numeric" placeholder="Ej. 1" />
+          </label>
+
+          <div class="checks">
+            <label class="check">
+              <input id="sindicatoHoras" type="checkbox" />
+              <span>Sindicato</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="cta">
+          <button id="btn-calcular-horas" class="btn btn-brand">Calcular sueldo</button>
+          <button id="btn-opciones-2" class="btn btn-accent">Opciones avanzadas</button>
+        </div>
+
+        <div id="resultado-horas" class="resultado hide">
+          <div class="neto" id="neto-horas"></div>
+          <div class="bruto" id="bruto-horas"></div>
+          <button id="btn-detalle-horas" class="btn btn-ghost">Ver detalle completo</button>
+        </div>
+      </section>
     </main>
 
     <!-- MODAL Detalle -->
-    <div class="modal" id="modal-detalle">...</div>
+    <div class="modal" id="modal-detalle">
+      <div class="modal-card lg">
+        <pre id="detalle-pre" class="detalle"></pre>
+        <div class="modal-actions">
+          <button id="btn-cerrar-detalle" class="btn btn-ghost">Cerrar</button>
+          <button id="btn-copiar" class="btn btn-accent">Copiar</button>
+        </div>
+      </div>
+    </div>
 
     <!-- MODAL Opciones avanzadas -->
-    <div class="modal" id="modal-opciones">...</div>
+    <div class="modal" id="modal-opciones">
+      <div class="modal-card">
+        <h2>Opciones avanzadas</h2>
+        <div class="grid">
+          <label class="field">
+            <span>▼ Escala salarial</span>
+            <select id="escalaMes"></select>
+          </label>
+
+          <label class="field">
+            <span>Horas extras desde</span>
+            <select id="horasExtrasDesde">
+              <option value="192">192</option>
+              <option value="200">200</option>
+              <option value="208" selected>208</option>
+            </select>
+          </label>
+
+          <label class="field"><span>Hora normal</span><input id="vHora" type="number" step="0.01"></label>
+          <label class="field"><span>Hora extra 50%</span><input id="vHora50" type="number" step="0.01"></label>
+          <label class="field"><span>Hora extra 100%</span><input id="vHora100" type="number" step="0.01"></label>
+          <label class="field"><span>Hora nocturna (adicional)</span><input id="vHoraNoc" type="number" step="0.01"></label>
+          <label class="field"><span>Plus adicional</span><input id="plusAdi" type="number" step="0.01"></label>
+          <label class="field"><span>Plus no remunerativo</span><input id="plusNR" type="number" step="0.01"></label>
+          <label class="field"><span>Horas extra por jornada</span><input id="extraJornada" type="number" step="1"></label>
+          <label class="field"><span>Sueldo básico</span><input id="sBasico" type="number" step="0.01"></label>
+          <label class="field"><span>Presentismo</span><input id="presentismo" type="number" step="0.01"></label>
+          <label class="field"><span>Viáticos</span><input id="viaticos" type="number" step="0.01"></label>
+          <label class="field"><span>Horas nocturnas x día</span><input id="horasNocXD" type="number" step="1"></label>
+        </div>
+        <div class="modal-actions">
+          <button id="btn-reset" class="btn btn-ghost">Restablecer</button>
+          <div class="spacer"></div>
+          <button id="btn-cancelar-opc" class="btn">Cancelar</button>
+          <button id="btn-guardar-opc" class="btn btn-brand">Guardar</button>
+        </div>
+      </div>
+    </div>
 
     <!-- MODAL Acerca de -->
-    <div class="modal" id="modal-acerca">...</div>
+    <div class="modal" id="modal-acerca">
+      <div class="modal-card lg">
+        <div class="brand" style="margin-bottom:8px">
+          <img src="https://cdn.jsdelivr.net/gh/sanavera/sueldo-vigilador-web@main/ic_launcher.png" alt="" />
+          <h1>Sueldo <span>Vigilador</span></h1>
+        </div>
+
+        <div style="margin:6px 0 14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+          <strong>Desarrollador:</strong> <span>Sebastián Sanavera</span>
+          <span style="opacity:.7">•</span>
+          <span>Versión: <span class="chip" style="padding:4px 10px; border-radius:999px">Beta (modo prueba)</span></span>
+        </div>
+
+        <div class="card" style="margin-bottom:12px">
+          <h2 style="margin:0 0 8px; font-size:18px">Código abierto</h2>
+          <p class="sub" style="margin:0 0 8px">El código fuente está liberado para ver/editar/aprender:</p>
+          <ul class="about-list">
+            <li><a href="https://github.com/sanavera/sueldo-vigilador-web" target="_blank" rel="noopener">Repositorio en GitHub</a></li>
+            <li><a href="https://sanavera.netlify.app/" target="_blank" rel="noopener">Sanavera MP3 - Otro proyecto</a></li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h2 style="margin:0 0 8px; font-size:18px">Fuentes de información</h2>
+          <p class="sub" style="margin:0 8px 10px 0">Escalas salariales y normas consultadas:</p>
+          <ul class="about-list">
+            <li><a href="https://upsra.org.ar/" target="_blank" rel="noopener">UPSRA (Unión Personal de Seguridad)</a></li>
+            <li><a href="https://www.lavozdelvigilador.com/" target="_blank" rel="noopener">La Voz del Vigilador</a></li>
+            <li><a href="https://www.boletinoficial.gob.ar/" target="_blank" rel="noopener">Boletín Oficial de la República Argentina</a></li>
+          </ul>
+          <p class="sub" style="margin-top:10px">
+            La app implementa: antigüedad 1% anual, extras 50%/100%, nocturnidad (0,1% del básico por hora), feriados según modalidad 12h/8-10h, y APOS 3% sobre sumas no remunerativas.
+          </p>
+        </div>
+
+        <div class="modal-actions" style="margin-top:14px">
+          <div class="spacer"></div>
+          <button id="btn-cerrar-acerca" class="btn btn-brand">Entendido</button>
+        </div>
+      </div>
+    </div>
 
     <footer class="footer-text">Desarrollado por Sebastián Sanavera ®</footer>
   </div>
 
-  <!-- Burbuja flotante -->
+  <script src="app.js"></script>
+
+  <!-- Burbuja flotante del bot -->
   <div class="chat-bubble" id="btn-bot">
     <img src="https://cdn-icons-png.flaticon.com/512/134/134914.png" alt="Bot">
   </div>
@@ -132,9 +266,53 @@
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <style>
+    .chat-bubble {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: #0084ff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      z-index: 1000;
+    }
+    .chat-bubble img { width: 32px; height: 32px; }
+
+    #modal-bot {
+      position: fixed;
+      top: 0; left: 0; right:0; bottom:0;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+    #modal-bot.show { display: flex; }
+    #modal-bot .modal-card {
+      width: 90%; height: 90%;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    #modal-bot iframe {
+      flex: 1; border: none; width: 100%; height: 100%;
+    }
+    #modal-bot .modal-actions {
+      background: #f1f1f1;
+      padding: 8px;
+      text-align: right;
+    }
+  </style>
+
   <script>
-    // 🟦 Bot bubble
     const encodedUrl = "aHR0cHM6Ly9sbG0tY2hhdC1hcHAtdGVtcGxhdGUuc2FuYXZlcmE3OC53b3JrZXJzLmRldi8="; 
     const botFrame = document.getElementById("botFrame");
     const modalBot = document.getElementById("modal-bot");
