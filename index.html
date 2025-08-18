@@ -11,6 +11,81 @@
   <meta name="theme-color" content="#161821" media="(prefers-color-scheme: dark)">
 
   <link rel="stylesheet" href="style.css" />
+
+  <!-- ==== UI Bot flotante (estilos aislados) ==== -->
+  <style>
+    /* Prefijo sv- para no chocar con tu CSS */
+    .sv-chat-launcher{
+      position:fixed; top:40%; right:12px; z-index:9999;
+      display:flex; flex-direction:column; align-items:flex-end; gap:8px;
+    }
+    .sv-chat-btn{
+      width:58px;height:58px;border-radius:50%;
+      background:#25d366; color:#fff; border:none; box-shadow:0 8px 24px rgba(0,0,0,.18);
+      display:grid; place-items:center; cursor:pointer; transition:transform .12s ease, box-shadow .12s ease;
+    }
+    .sv-chat-btn:hover{ transform:translateY(-1px); box-shadow:0 10px 28px rgba(0,0,0,.22) }
+    .sv-chat-btn:active{ transform:translateY(0) }
+    .sv-chat-btn svg{ width:28px; height:28px }
+
+    .sv-tooltip{
+      max-width:220px; padding:10px 12px; font-size:13px; line-height:1.35;
+      background:#fff; color:#1f2937; border-radius:14px; box-shadow:0 10px 24px rgba(0,0,0,.16);
+      border:1px solid rgba(0,0,0,.06);
+      position:relative; opacity:0; transform:translateX(8px);
+      transition:opacity .22s ease, transform .22s ease;
+    }
+    .sv-tooltip.show{ opacity:1; transform:translateX(0) }
+    .sv-tooltip.hide{ opacity:0; transform:translateX(8px) }
+    .sv-tooltip::after{
+      content:""; position:absolute; right:8px; top:50%; transform:translateY(-50%);
+      border-left:8px solid #fff; border-top:8px solid transparent; border-bottom:8px solid transparent;
+      filter:drop-shadow(0 1px 0 rgba(0,0,0,.06));
+    }
+
+    /* Modal */
+    .sv-modal{
+      position:fixed; inset:0; z-index:10000; display:none;
+    }
+    .sv-modal.show{ display:block }
+    .sv-backdrop{
+      position:absolute; inset:0; background:rgba(0,0,0,.35); backdrop-filter:blur(2px);
+    }
+    .sv-sheet{
+      position:absolute; inset:auto 10px 10px auto;
+      width:min(480px, 96vw); height:min(84vh, 96vh);
+      background:#0f172a; color:#e5e7eb; border-radius:22px;
+      box-shadow:0 16px 40px rgba(0,0,0,.35); overflow:hidden;
+      border:1px solid rgba(255,255,255,.06);
+    }
+    @media (max-width:560px){
+      .sv-sheet{ inset: 10px 10px 10px 10px; width: auto; height:auto; }
+    }
+    .sv-head{
+      height:52px; display:flex; align-items:center; justify-content:space-between;
+      padding:0 10px 0 12px; background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+      border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    .sv-head .sv-title{
+      display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.2px;
+    }
+    .sv-pill{
+      background:#22c55e1a; color:#86efac; font-size:11px; padding:4px 8px; border-radius:999px;
+      border:1px solid #22c55e33;
+    }
+    .sv-close{
+      background:transparent; color:#e5e7eb; border:1px solid rgba(255,255,255,.16);
+      border-radius:10px; padding:6px 10px; cursor:pointer;
+    }
+    .sv-close:hover{ background:rgba(255,255,255,.08) }
+    .sv-body{ height:calc(100% - 52px) }
+    .sv-body iframe{ width:100%; height:100%; border:0; display:block; background:#111827 }
+
+    /* Respetar notch */
+    @supports(padding:max(0px)){
+      .sv-sheet{ padding-bottom: max(0px, env(safe-area-inset-bottom)); }
+    }
+  </style>
 </head>
 <body>
   <div id="app">
@@ -168,6 +243,7 @@
       <div class="modal-card">
         <h2>Opciones avanzadas</h2>
         <div class="grid">
+          <!-- Spinner de Escala salarial -->
           <label class="field">
             <span>▼ Escala salarial</span>
             <select id="escalaMes"></select>
@@ -249,83 +325,91 @@
     <footer class="footer-text">Desarrollado por Sebastián Sanavera ®</footer>
   </div>
 
-  <script src="app.js"></script>
-
-  <!-- Burbuja flotante del bot -->
-  <div class="chat-bubble" id="btn-bot">
-    <img src="https://cdn-icons-png.flaticon.com/512/134/134914.png" alt="Bot">
+  <!-- Lanzador + tooltip -->
+  <div class="sv-chat-launcher" aria-live="polite">
+    <div class="sv-tooltip" id="sv-tip">¿Querés charlar con el asistente?</div>
+    <button class="sv-chat-btn" id="sv-open" aria-label="Abrir asistente">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M2 3h20v14H7l-5 4V3z"></path>
+      </svg>
+    </button>
   </div>
 
-  <!-- Modal del bot -->
-  <div class="modal" id="modal-bot">
-    <div class="modal-card">
-      <div class="modal-actions">
-        <button id="btn-cerrar-bot" class="btn">Cerrar</button>
+  <!-- Modal Bot -->
+  <div class="sv-modal" id="sv-modal" aria-hidden="true">
+    <div class="sv-backdrop" id="sv-backdrop"></div>
+    <div class="sv-sheet" role="dialog" aria-modal="true" aria-labelledby="sv-title">
+      <div class="sv-head">
+        <div class="sv-title" id="sv-title">
+          <img src="https://cdn.jsdelivr.net/gh/sanavera/sueldo-vigilador-web@main/ic_launcher.png" alt="" width="22" height="22" style="border-radius:6px">
+          <span>Vigilador Asistente</span>
+          <span class="sv-pill">En línea</span>
+        </div>
+        <button class="sv-close" id="sv-close">Cerrar</button>
       </div>
-      <iframe id="botFrame"></iframe>
+      <div class="sv-body">
+        <iframe id="sv-frame" title="Asistente"></iframe>
+      </div>
     </div>
   </div>
 
-  <style>
-    .chat-bubble {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      width: 60px;
-      height: 60px;
-      border-radius: 50%;
-      background: #0084ff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-      z-index: 1000;
-    }
-    .chat-bubble img { width: 32px; height: 32px; }
+  <script src="app.js"></script>
 
-    #modal-bot {
-      position: fixed;
-      top: 0; left: 0; right:0; bottom:0;
-      background: rgba(0,0,0,0.6);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 2000;
-    }
-    #modal-bot.show { display: flex; }
-    #modal-bot .modal-card {
-      width: 90%; height: 90%;
-      background: #fff;
-      border-radius: 12px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-    #modal-bot iframe {
-      flex: 1; border: none; width: 100%; height: 100%;
-    }
-    #modal-bot .modal-actions {
-      background: #f1f1f1;
-      padding: 8px;
-      text-align: right;
-    }
-  </style>
-
+  <!-- ==== Lógica Bot flotante (aislada y sin romper nada) ==== -->
   <script>
-    const encodedUrl = "aHR0cHM6Ly9sbG0tY2hhdC1hcHAtdGVtcGxhdGUuc2FuYXZlcmE3OC53b3JrZXJzLmRldi8="; 
-    const botFrame = document.getElementById("botFrame");
-    const modalBot = document.getElementById("modal-bot");
+    (function(){
+      const OPEN_MS = 2600; // tiempo visible del globito
+      const BOT_B64 = "aHR0cHM6Ly9sbG0tY2hhdC1hcHAtdGVtcGxhdGUuc2FuYXZlcmE3OC53b3JrZXJzLmRldi8="; // https://llm-chat-app-template.sanavera78.workers.dev/
 
-    document.getElementById("btn-bot").addEventListener("click", () => {
-      botFrame.src = atob(encodedUrl);
-      modalBot.classList.add("show");
-    });
+      const $tip   = document.getElementById('sv-tip');
+      const $open  = document.getElementById('sv-open');
+      const $modal = document.getElementById('sv-modal');
+      const $back  = document.getElementById('sv-backdrop');
+      const $close = document.getElementById('sv-close');
+      const $frame = document.getElementById('sv-frame');
 
-    document.getElementById("btn-cerrar-bot").addEventListener("click", () => {
-      modalBot.classList.remove("show");
-      botFrame.src = "";
-    });
+      function showTip(){
+        if(!$tip) return;
+        $tip.classList.add('show');
+        // Sonidito con WebAudio (si el navegador lo permite)
+        try{
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const o = ctx.createOscillator();
+          const g = ctx.createGain();
+          o.type = 'sine';
+          o.frequency.value = 880;
+          g.gain.setValueAtTime(0.001, ctx.currentTime);
+          g.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+          o.connect(g).connect(ctx.destination);
+          o.start();
+          o.stop(ctx.currentTime + 0.16);
+        }catch(e){}
+        setTimeout(()=> $tip.classList.add('hide'), OPEN_MS);
+        setTimeout(()=> { $tip.classList.remove('show','hide'); }, OPEN_MS + 250);
+      }
+
+      function openModal(){
+        if(!$frame.src) $frame.src = atob(BOT_B64);
+        $modal.classList.add('show');
+        $modal.setAttribute('aria-hidden', 'false');
+      }
+      function closeModal(){
+        $modal.classList.remove('show');
+        $modal.setAttribute('aria-hidden', 'true');
+      }
+
+      // Eventos
+      $open.addEventListener('click', openModal);
+      $close.addEventListener('click', closeModal);
+      $back.addEventListener('click', closeModal);
+      document.addEventListener('keydown', (e)=>{
+        if(e.key === 'Escape' && $modal.classList.contains('show')) closeModal();
+      });
+
+      // Mostrar tooltip luego de cargar todo
+      window.addEventListener('load', ()=> setTimeout(showTip, 600));
+    })();
   </script>
 </body>
 </html>
