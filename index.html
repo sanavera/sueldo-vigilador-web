@@ -44,13 +44,9 @@
     }
 
     /* Modal */
-    .sv-modal{
-      position:fixed; inset:0; z-index:10000; display:none;
-    }
+    .sv-modal{ position:fixed; inset:0; z-index:10000; display:none; }
     .sv-modal.show{ display:block }
-    .sv-backdrop{
-      position:absolute; inset:0; background:rgba(0,0,0,.35); backdrop-filter:blur(2px);
-    }
+    .sv-backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.35); backdrop-filter:blur(2px); }
     .sv-sheet{
       position:absolute; inset:auto 10px 10px auto;
       width:min(480px, 96vw); height:min(84vh, 96vh);
@@ -59,27 +55,18 @@
       border:1px solid rgba(255,255,255,.06);
     }
     @media (max-width:560px){
-      .sv-sheet{ inset: 10px 10px 10px 10px; width: auto; height:auto; }
+      .sv-sheet{ inset: 10px 10px 10px 10px; width:auto; height:auto; }
     }
-    .sv-head{
-      height:52px; display:flex; align-items:center; justify-content:space-between;
-      padding:0 10px 0 12px; background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
-      border-bottom:1px solid rgba(255,255,255,.06);
-    }
-    .sv-head .sv-title{
-      display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:.2px;
-    }
-    .sv-pill{
-      background:#22c55e1a; color:#86efac; font-size:11px; padding:4px 8px; border-radius:999px;
-      border:1px solid #22c55e33;
-    }
-    .sv-close{
-      background:transparent; color:#e5e7eb; border:1px solid rgba(255,255,255,.16);
-      border-radius:10px; padding:6px 10px; cursor:pointer;
-    }
-    .sv-close:hover{ background:rgba(255,255,255,.08) }
-    .sv-body{ height:calc(100% - 52px) }
+    .sv-body{ height:100%; }
     .sv-body iframe{ width:100%; height:100%; border:0; display:block; background:#111827 }
+
+    /* Botón cerrar flotante (sin header extra) */
+    .sv-close{
+      position:absolute; top:10px; right:10px; z-index:2;
+      background:rgba(17,24,39,.7); color:#e5e7eb; border:1px solid rgba(255,255,255,.16);
+      border-radius:12px; padding:6px 10px; cursor:pointer; backdrop-filter:saturate(140%) blur(2px);
+    }
+    .sv-close:hover{ background:rgba(17,24,39,.85) }
 
     /* Respetar notch */
     @supports(padding:max(0px)){
@@ -335,18 +322,11 @@
     </button>
   </div>
 
-  <!-- Modal Bot -->
+  <!-- Modal Bot (sin header extra) -->
   <div class="sv-modal" id="sv-modal" aria-hidden="true">
     <div class="sv-backdrop" id="sv-backdrop"></div>
     <div class="sv-sheet" role="dialog" aria-modal="true" aria-labelledby="sv-title">
-      <div class="sv-head">
-        <div class="sv-title" id="sv-title">
-          <img src="https://cdn.jsdelivr.net/gh/sanavera/sueldo-vigilador-web@main/ic_launcher.png" alt="" width="22" height="22" style="border-radius:6px">
-          <span>Vigilador Asistente</span>
-          <span class="sv-pill">En línea</span>
-        </div>
-        <button class="sv-close" id="sv-close">Cerrar</button>
-      </div>
+      <button class="sv-close" id="sv-close" aria-label="Cerrar asistente">Cerrar ✕</button>
       <div class="sv-body">
         <iframe id="sv-frame" title="Asistente"></iframe>
       </div>
@@ -413,3 +393,4 @@
   </script>
 </body>
 </html>
+```0
