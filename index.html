@@ -12,65 +12,72 @@
 
   <link rel="stylesheet" href="style.css" />
 
-  <!-- ==== UI Bot flotante (estilos aislados) ==== -->
+  <!-- Estilos del botón flotante y modal del bot -->
   <style>
-    /* Prefijo sv- para no chocar con tu CSS */
-    .sv-chat-launcher{
-      position:fixed; top:40%; right:12px; z-index:9999;
-      display:flex; flex-direction:column; align-items:flex-end; gap:8px;
+    /* ---------- Botón flotante ---------- */
+    .svb-float {
+      position: fixed;
+      right: 14px;
+      top: 42vh;               /* media altura; alejamos de botones propios */
+      z-index: 1000;
+      display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+      user-select: none;
     }
-    .sv-chat-btn{
-      width:58px;height:58px;border-radius:50%;
-      background:#25d366; color:#fff; border:none; box-shadow:0 8px 24px rgba(0,0,0,.18);
-      display:grid; place-items:center; cursor:pointer; transition:transform .12s ease, box-shadow .12s ease;
+    .svb-float .svb-bubble {
+      width: 54px; height: 54px; border-radius: 50%;
+      background: #1f6feb; color: #fff;
+      display: grid; place-items: center;
+      box-shadow: 0 10px 25px rgba(31,111,235,.35), 0 2px 6px rgba(0,0,0,.25);
+      cursor: pointer;
+      transform: translateZ(0);
     }
-    .sv-chat-btn:hover{ transform:translateY(-1px); box-shadow:0 10px 28px rgba(0,0,0,.22) }
-    .sv-chat-btn:active{ transform:translateY(0) }
-    .sv-chat-btn svg{ width:28px; height:28px }
+    .svb-float .svb-bubble:active { transform: scale(.98); }
 
-    .sv-tooltip{
-      max-width:220px; padding:10px 12px; font-size:13px; line-height:1.35;
-      background:#fff; color:#1f2937; border-radius:14px; box-shadow:0 10px 24px rgba(0,0,0,.16);
-      border:1px solid rgba(0,0,0,.06);
-      position:relative; opacity:0; transform:translateX(8px);
-      transition:opacity .22s ease, transform .22s ease;
+    .svb-float .svb-hint {
+      max-width: 220px;
+      background: #fff; color: #111;
+      border-radius: 14px; padding: 10px 12px; font-size: 13px;
+      box-shadow: 0 10px 25px rgba(0,0,0,.18), 0 2px 6px rgba(0,0,0,.12);
+      border: 1px solid rgba(0,0,0,.06);
+      opacity: 0; pointer-events: none; transform: translateY(6px);
+      transition: opacity .28s ease, transform .28s ease;
     }
-    .sv-tooltip.show{ opacity:1; transform:translateX(0) }
-    .sv-tooltip.hide{ opacity:0; transform:translateX(8px) }
-    .sv-tooltip::after{
-      content:""; position:absolute; right:8px; top:50%; transform:translateY(-50%);
-      border-left:8px solid #fff; border-top:8px solid transparent; border-bottom:8px solid transparent;
-      filter:drop-shadow(0 1px 0 rgba(0,0,0,.06));
+    .svb-float .svb-hint.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+    .svb-float .svb-hint .dot {
+      width: 8px; height: 8px; border-radius: 50%; background: #1f6feb; display: inline-block; margin-right: 6px;
     }
 
-    /* Modal */
-    .sv-modal{ position:fixed; inset:0; z-index:10000; display:none; }
-    .sv-modal.show{ display:block }
-    .sv-backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.35); backdrop-filter:blur(2px); }
-    .sv-sheet{
-      position:absolute; inset:auto 10px 10px auto;
-      width:min(480px, 96vw); height:min(84vh, 96vh);
-      background:#0f172a; color:#e5e7eb; border-radius:22px;
-      box-shadow:0 16px 40px rgba(0,0,0,.35); overflow:hidden;
-      border:1px solid rgba(255,255,255,.06);
+    /* ---------- Modal del bot ---------- */
+    .svb-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.45);
+      backdrop-filter: blur(1.5px);
+      display: none; z-index: 1100;
     }
-    @media (max-width:560px){
-      .sv-sheet{ inset: 10px 10px 10px 10px; width:auto; height:auto; }
-    }
-    .sv-body{ height:100%; }
-    .sv-body iframe{ width:100%; height:100%; border:0; display:block; background:#111827 }
+    .svb-overlay.show { display: block; }
 
-    /* Botón cerrar flotante (sin header extra) */
-    .sv-close{
-      position:absolute; top:10px; right:10px; z-index:2;
-      background:rgba(17,24,39,.7); color:#e5e7eb; border:1px solid rgba(255,255,255,.16);
-      border-radius:12px; padding:6px 10px; cursor:pointer; backdrop-filter:saturate(140%) blur(2px);
+    .svb-card {
+      position: absolute; inset: 4% max(10px, 2%) 4% max(10px, 2%);
+      max-width: 920px; margin: auto; left: 0; right: 0; top: 0; bottom: 0;
+      background: #0b0f16; border-radius: 22px; overflow: hidden;
+      box-shadow: 0 30px 80px rgba(0,0,0,.45), 0 3px 10px rgba(0,0,0,.35);
     }
-    .sv-close:hover{ background:rgba(17,24,39,.85) }
+    .svb-frame { width: 100%; height: 100%; border: 0; display: block; }
 
-    /* Respetar notch */
-    @supports(padding:max(0px)){
-      .sv-sheet{ padding-bottom: max(0px, env(safe-area-inset-bottom)); }
+    /* Botón cerrar, afuera del ángulo para no tapar el menú del bot */
+    .svb-close {
+      position: absolute; top: 0; right: 0;
+      transform: translate(40%, -40%);
+      width: 40px; height: 40px; border-radius: 50%;
+      background: #111827; color: #fff; border: 2px solid #1f2937;
+      box-shadow: 0 8px 18px rgba(0,0,0,.35);
+      cursor: pointer; z-index: 2;
+    }
+    .svb-close:hover { background: #0f172a; }
+
+    /* Ajustes móviles: subimos un poco la burbuja */
+    @media (max-width: 480px) {
+      .svb-float { right: 10px; top: 48vh; }
+      .svb-card { inset: 6% 3%; border-radius: 20px; }
     }
   </style>
 </head>
@@ -312,85 +319,77 @@
     <footer class="footer-text">Desarrollado por Sebastián Sanavera ®</footer>
   </div>
 
-  <!-- Lanzador + tooltip -->
-  <div class="sv-chat-launcher" aria-live="polite">
-    <div class="sv-tooltip" id="sv-tip">¿Querés charlar con el asistente?</div>
-    <button class="sv-chat-btn" id="sv-open" aria-label="Abrir asistente">
-      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-        <path d="M2 3h20v14H7l-5 4V3z"></path>
-      </svg>
-    </button>
+  <!-- Overlay y Card del BOT -->
+  <div id="svb-overlay" class="svb-overlay" aria-hidden="true">
+    <div class="svb-card" role="dialog" aria-label="Vigilador Asistente">
+      <button id="svb-close" class="svb-close" title="Cerrar">✕</button>
+      <iframe id="svb-frame" class="svb-frame" allow="clipboard-read; clipboard-write; microphone"></iframe>
+    </div>
   </div>
 
-  <!-- Modal Bot (sin header extra) -->
-  <div class="sv-modal" id="sv-modal" aria-hidden="true">
-    <div class="sv-backdrop" id="sv-backdrop"></div>
-    <div class="sv-sheet" role="dialog" aria-modal="true" aria-labelledby="sv-title">
-      <button class="sv-close" id="sv-close" aria-label="Cerrar asistente">Cerrar ✕</button>
-      <div class="sv-body">
-        <iframe id="sv-frame" title="Asistente"></iframe>
-      </div>
-    </div>
+  <!-- Botón flotante -->
+  <div class="svb-float" id="svb-float">
+    <div class="svb-hint" id="svb-hint"><span class="dot"></span>¿Querés chatear con el asistente?</div>
+    <div class="svb-bubble" id="svb-open" title="Abrir asistente">💬</div>
   </div>
 
   <script src="app.js"></script>
 
-  <!-- ==== Lógica Bot flotante (aislada y sin romper nada) ==== -->
+  <!-- Lógica del botón flotante y modal -->
   <script>
     (function(){
-      const OPEN_MS = 2600; // tiempo visible del globito
-      const BOT_B64 = "aHR0cHM6Ly9sbG0tY2hhdC1hcHAtdGVtcGxhdGUuc2FuYXZlcmE3OC53b3JrZXJzLmRldi8="; // https://llm-chat-app-template.sanavera78.workers.dev/
+      const overlay = document.getElementById('svb-overlay');
+      const openBtn = document.getElementById('svb-open');
+      const closeBtn = document.getElementById('svb-close');
+      const hint    = document.getElementById('svb-hint');
+      const frame   = document.getElementById('svb-frame');
 
-      const $tip   = document.getElementById('sv-tip');
-      const $open  = document.getElementById('sv-open');
-      const $modal = document.getElementById('sv-modal');
-      const $back  = document.getElementById('sv-backdrop');
-      const $close = document.getElementById('sv-close');
-      const $frame = document.getElementById('sv-frame');
+      // URL del bot (Base64 de https://llm-chat-app-template.sanavera78.workers.dev/ )
+      const BOT_B64 = "aHR0cHM6Ly9sbG0tY2hhdC1hcHAtdGVtcGxhdGUuc2FuYXZlcmE3OC53b3JrZXJzLmRldi8=";
 
-      function showTip(){
-        if(!$tip) return;
-        $tip.classList.add('show');
-        // Sonidito con WebAudio (si el navegador lo permite)
-        try{
-          const ctx = new (window.AudioContext || window.webkitAudioContext)();
-          const o = ctx.createOscillator();
-          const g = ctx.createGain();
-          o.type = 'sine';
-          o.frequency.value = 880;
-          g.gain.setValueAtTime(0.001, ctx.currentTime);
-          g.gain.exponentialRampToValueAtTime(0.08, ctx.currentTime + 0.02);
-          g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
-          o.connect(g).connect(ctx.destination);
-          o.start();
-          o.stop(ctx.currentTime + 0.16);
-        }catch(e){}
-        setTimeout(()=> $tip.classList.add('hide'), OPEN_MS);
-        setTimeout(()=> { $tip.classList.remove('show','hide'); }, OPEN_MS + 250);
+      // Cargar iframe solo una vez al abrir (para no consumir recursos antes)
+      let loaded = false;
+      function ensureLoaded(){
+        if(loaded) return;
+        try { frame.src = atob(BOT_B64); loaded = true; } catch {}
       }
 
+      // Mostrar y ocultar
       function openModal(){
-        if(!$frame.src) $frame.src = atob(BOT_B64);
-        $modal.classList.add('show');
-        $modal.setAttribute('aria-hidden', 'false');
+        ensureLoaded();
+        overlay.classList.add('show');
+        document.body.style.overflow = 'hidden';
       }
       function closeModal(){
-        $modal.classList.remove('show');
-        $modal.setAttribute('aria-hidden', 'true');
+        overlay.classList.remove('show');
+        document.body.style.overflow = '';
       }
 
-      // Eventos
-      $open.addEventListener('click', openModal);
-      $close.addEventListener('click', closeModal);
-      $back.addEventListener('click', closeModal);
-      document.addEventListener('keydown', (e)=>{
-        if(e.key === 'Escape' && $modal.classList.contains('show')) closeModal();
-      });
+      openBtn.addEventListener('click', openModal);
+      closeBtn.addEventListener('click', closeModal);
+      overlay.addEventListener('click', (e)=>{ if(e.target===overlay) closeModal(); });
 
-      // Mostrar tooltip luego de cargar todo
-      window.addEventListener('load', ()=> setTimeout(showTip, 600));
+      // Hint que aparece y suena, luego se esconde
+      function playPop(){
+        try{
+          const actx = new (window.AudioContext||window.webkitAudioContext)();
+          const o = actx.createOscillator(), g = actx.createGain();
+          o.type = 'sine'; o.frequency.value = 880; // pop agudo
+          g.gain.setValueAtTime(0.0001, actx.currentTime);
+          g.gain.exponentialRampToValueAtTime(0.12, actx.currentTime + 0.03);
+          g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + 0.20);
+          o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime + 0.22);
+        }catch(e){}
+      }
+      // Mostrar a los 900ms y ocultar a los 3s
+      setTimeout(()=>{ hint.classList.add('show'); playPop(); }, 900);
+      setTimeout(()=> hint.classList.remove('show'), 3600);
+
+      // Seguridad: si teclado abre/resize movemos un poco la burbuja
+      window.addEventListener('resize', ()=>{
+        // nada crítico; dejamos CSS hacer el trabajo
+      });
     })();
   </script>
 </body>
 </html>
-```0
