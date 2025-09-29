@@ -8,9 +8,12 @@
 const SCALES = {
   "2025-07": { label: "Julio 2025",      SUELDO_BASICO: 745030, PRESENTISMO: 153600, VIATICOS: 435580, PLUS_NR: 25000 },
   "2025-08": { label: "Agosto 2025",     SUELDO_BASICO: 751735, PRESENTISMO: 153600, VIATICOS: 443215, PLUS_NR: 50000 },
-  "2025-09": { label: "Septiembre 2025", SUELDO_BASICO: 808600, PRESENTISMO: 153600, VIATICOS: 448800, PLUS_NR:     0 }
+  "2025-09": { label: "Septiembre 2025", SUELDO_BASICO: 808600, PRESENTISMO: 153600, VIATICOS: 448800, PLUS_NR: 0 },
+  "2025-10": { label: "Octubre 2025",    SUELDO_BASICO: 817500, PRESENTISMO: 159600, VIATICOS: 473800, PLUS_NR: 0 },
+  "2025-11": { label: "Noviembre 2025",  SUELDO_BASICO: 825600, PRESENTISMO: 159600, VIATICOS: 473800, PLUS_NR: 0 },
+  "2025-12": { label: "Diciembre 2025",  SUELDO_BASICO: 833600, PRESENTISMO: 159600, VIATICOS: 473800, PLUS_NR: 25000 }
 };
-const SCALE_KEYS = ["2025-07","2025-08","2025-09"];
+const SCALE_KEYS = ["2025-07","2025-08","2025-09", "2025-10", "2025-11", "2025-12"];
 
 /* === Helpers de números/horas === */
 function round2(n){ return Math.round((+n + Number.EPSILON) * 100) / 100; }
@@ -29,11 +32,22 @@ function computeRatesFromBasic(basico){
   };
 }
 function pickActiveScaleKey(d = new Date()){
-  const y = d.getFullYear(), m = d.getMonth()+1;
-  if (y < 2025 || (y === 2025 && m <= 7)) return "2025-07";
-  if (y === 2025 && m === 8) return "2025-08";
-  return "2025-09"; // desde septiembre en adelante
+  const y = d.getFullYear(), m = d.getMonth() + 1;
+  
+  if (y === 2025) {
+    if (m >= 12) return "2025-12";
+    if (m === 11) return "2025-11";
+    if (m === 10) return "2025-10";
+    // Para meses de 2025 anteriores a Octubre, usa Octubre por defecto.
+    return "2025-10";
+  }
+  // Si el año es posterior a 2025, usa la última escala conocida.
+  if (y > 2025) return "2025-12";
+  
+  // Si el año es anterior a 2025, usa Octubre como defecto al abrir.
+  return "2025-10";
 }
+
 
 /* === Defaults (se pisan con la escala o el guardado) === */
 const DEFAULTS = {
