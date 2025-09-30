@@ -12,41 +12,8 @@
 
   <link rel="stylesheet" href="style.css" />
 
-  <!-- Estilos del botón flotante y modal del bot -->
+  <!-- Estilos del modal del bot -->
   <style>
-    /* ---------- Botón flotante ---------- */
-    .svb-float {
-      position: fixed;
-      right: 14px;
-      top: 42vh;               /* media altura; alejamos de botones propios */
-      z-index: 1000;
-      display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
-      user-select: none;
-    }
-    .svb-float .svb-bubble {
-      width: 54px; height: 54px; border-radius: 50%;
-      background: #1f6feb; color: #fff;
-      display: grid; place-items: center;
-      box-shadow: 0 10px 25px rgba(31,111,235,.35), 0 2px 6px rgba(0,0,0,.25);
-      cursor: pointer;
-      transform: translateZ(0);
-    }
-    .svb-float .svb-bubble:active { transform: scale(.98); }
-
-    .svb-float .svb-hint {
-      max-width: 220px;
-      background: #fff; color: #111;
-      border-radius: 14px; padding: 10px 12px; font-size: 13px;
-      box-shadow: 0 10px 25px rgba(0,0,0,.18), 0 2px 6px rgba(0,0,0,.12);
-      border: 1px solid rgba(0,0,0,.06);
-      opacity: 0; pointer-events: none; transform: translateY(6px);
-      transition: opacity .28s ease, transform .28s ease;
-    }
-    .svb-float .svb-hint.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
-    .svb-float .svb-hint .dot {
-      width: 8px; height: 8px; border-radius: 50%; background: #1f6feb; display: inline-block; margin-right: 6px;
-    }
-
     /* ---------- Modal del bot ---------- */
     .svb-overlay {
       position: fixed; inset: 0; background: rgba(0,0,0,.45);
@@ -63,27 +30,30 @@
     }
     .svb-frame { width: 100%; height: 100%; border: 0; display: block; }
 
-    /* Botón cerrar, afuera del ángulo para no tapar el menú del bot */
+    /* Botón cerrar, ajustado para mejor visibilidad */
     .svb-close {
-      position: absolute; top: 0; right: 0;
-      transform: translate(40%, -40%);
-      width: 40px; height: 40px; border-radius: 50%;
+      position: absolute; top: 8px; right: 8px;
+      transform: translate(20%, -20%);
+      width: 36px; height: 36px; border-radius: 50%;
       background: #111827; color: #fff; border: 2px solid #1f2937;
       box-shadow: 0 8px 18px rgba(0,0,0,.35);
       cursor: pointer; z-index: 2;
+      font-size: 24px;
+      line-height: 32px;
+      text-align: center;
     }
     .svb-close:hover { background: #0f172a; }
 
-    /* Ajustes móviles: subimos un poco la burbuja */
+    /* Ajustes móviles */
     @media (max-width: 480px) {
-      .svb-float { right: 10px; top: 48vh; }
       .svb-card { inset: 6% 3%; border-radius: 20px; }
+      .svb-close { transform: translate(10%, -10%); }
     }
   </style>
 </head>
 <body>
   <div id="app">
-    <!-- MODAL de modo de cálculo -->
+    <!-- MODAL de modo de cálculo (rediseñado) -->
     <div class="modal show" id="modal-modo">
       <div class="modal-card">
         <div class="brand">
@@ -91,11 +61,15 @@
           <h1>Sueldo <span>Vigilador</span></h1>
         </div>
         <p class="lead">¿Cómo querés calcular tu sueldo?</p>
-        <p class="sub">Elegí la modalidad que usás para calcularlo de forma más precisa.</p>
+        <p class="sub">Elegí una opción para empezar.</p>
         <div class="btn-col">
           <button id="btn-modo-dias" class="btn btn-brand">Por días trabajados</button>
           <button id="btn-modo-horas" class="btn btn-accent">Por horas trabajadas</button>
-          <button id="btn-acerca" class="btn btn-ghost">Acerca de</button>
+          <button id="btn-asistente" class="btn btn-secondary">Chatear con el asistente</button>
+          <label class="field" id="escala-inicio-wrap">
+            <span>Elegí la escala salarial (mes)</span>
+            <select id="escalaMesInicio"></select>
+          </label>
         </div>
       </div>
     </div>
@@ -106,7 +80,10 @@
         <img src="https://cdn.jsdelivr.net/gh/sanavera/sueldo-vigilador-web@main/ic_launcher.png" alt="" />
         <h1>Sueldo <span>Vigilador</span></h1>
       </div>
-      <button id="btn-nuevo" class="chip">Nuevo cálculo</button>
+      <div>
+        <button id="btn-acerca" class="chip-secondary">Acerca de</button>
+        <button id="btn-nuevo" class="chip">Nuevo cálculo</button>
+      </div>
     </header>
 
     <!-- FORMULARIOS -->
@@ -239,7 +216,7 @@
         <div class="grid">
           <!-- Spinner de Escala salarial -->
           <label class="field">
-            <span>▼ Escala salarial</span>
+            <span>▼ Escala salarial (mes)</span>
             <select id="escalaMes"></select>
           </label>
 
@@ -322,74 +299,14 @@
   <!-- Overlay y Card del BOT -->
   <div id="svb-overlay" class="svb-overlay" aria-hidden="true">
     <div class="svb-card" role="dialog" aria-label="Vigilador Asistente">
-      <button id="svb-close" class="svb-close" title="Cerrar">✕</button>
+      <button id="svb-close" class="svb-close" title="Cerrar">&times;</button>
       <iframe id="svb-frame" class="svb-frame" allow="clipboard-read; clipboard-write; microphone"></iframe>
     </div>
   </div>
 
-  <!-- Botón flotante -->
-  <div class="svb-float" id="svb-float">
-    <div class="svb-hint" id="svb-hint"><span class="dot"></span>¿Querés chatear con el asistente?</div>
-    <div class="svb-bubble" id="svb-open" title="Abrir asistente">💬</div>
-  </div>
-
+  <!-- Scripts de la aplicación -->
   <script src="app.js"></script>
 
-  <!-- Lógica del botón flotante y modal -->
-  <script>
-    (function(){
-      const overlay = document.getElementById('svb-overlay');
-      const openBtn = document.getElementById('svb-open');
-      const closeBtn = document.getElementById('svb-close');
-      const hint    = document.getElementById('svb-hint');
-      const frame   = document.getElementById('svb-frame');
-
-      // URL del bot (Base64 de https://llm-chat-app-template.sanavera78.workers.dev/ )
-      const BOT_B64 = "aHR0cHM6Ly9sbG0tY2hhdC1hcHAtdGVtcGxhdGUuc2FuYXZlcmE3OC53b3JrZXJzLmRldi8=";
-
-      // Cargar iframe solo una vez al abrir (para no consumir recursos antes)
-      let loaded = false;
-      function ensureLoaded(){
-        if(loaded) return;
-        try { frame.src = atob(BOT_B64); loaded = true; } catch {}
-      }
-
-      // Mostrar y ocultar
-      function openModal(){
-        ensureLoaded();
-        overlay.classList.add('show');
-        document.body.style.overflow = 'hidden';
-      }
-      function closeModal(){
-        overlay.classList.remove('show');
-        document.body.style.overflow = '';
-      }
-
-      openBtn.addEventListener('click', openModal);
-      closeBtn.addEventListener('click', closeModal);
-      overlay.addEventListener('click', (e)=>{ if(e.target===overlay) closeModal(); });
-
-      // Hint que aparece y suena, luego se esconde
-      function playPop(){
-        try{
-          const actx = new (window.AudioContext||window.webkitAudioContext)();
-          const o = actx.createOscillator(), g = actx.createGain();
-          o.type = 'sine'; o.frequency.value = 880; // pop agudo
-          g.gain.setValueAtTime(0.0001, actx.currentTime);
-          g.gain.exponentialRampToValueAtTime(0.12, actx.currentTime + 0.03);
-          g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + 0.20);
-          o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime + 0.22);
-        }catch(e){}
-      }
-      // Mostrar a los 900ms y ocultar a los 3s
-      setTimeout(()=>{ hint.classList.add('show'); playPop(); }, 900);
-      setTimeout(()=> hint.classList.remove('show'), 3600);
-
-      // Seguridad: si teclado abre/resize movemos un poco la burbuja
-      window.addEventListener('resize', ()=>{
-        // nada crítico; dejamos CSS hacer el trabajo
-      });
-    })();
-  </script>
 </body>
 </html>
+
