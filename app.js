@@ -32,33 +32,30 @@ function computeRatesFromBasic(basico){
   };
 }
 function pickActiveScaleKey(d = new Date()){
-  const y = d.getFullYear(), m = d.getMonth() + 1;
-  
-  if (y === 2025) {
-    if (m >= 12) return "2025-12";
-    if (m === 11) return "2025-11";
-    if (m === 10) return "2025-10";
-    // Para meses de 2025 anteriores a Octubre, usa Octubre por defecto.
-    return "2025-10";
+  const currentKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  // Devuelve la escala más reciente que no sea futura
+  let bestKey = SCALE_KEYS[0];
+  for (const key of SCALE_KEYS) {
+    if (key <= currentKey) {
+      bestKey = key;
+    } else {
+      break;
+    }
   }
-  // Si el año es posterior a 2025, usa la última escala conocida.
-  if (y > 2025) return "2025-12";
-  
-  // Si el año es anterior a 2025, usa Octubre como defecto al abrir.
-  return "2025-10";
+  return bestKey;
 }
 
 
 /* === Defaults (se pisan con la escala o el guardado) === */
 const DEFAULTS = {
-  SUELDO_BASICO: 751735,
-  PRESENTISMO:   153600,
-  VIATICOS:      443215,
-  PLUS_NR:       50000,
-  V_HORA:        4526.68,
-  V_HORA_50:     6790.01,
-  V_HORA_100:    9053.35,
-  V_HORA_NOC:    751.74,  // 0,1% del básico de referencia
+  SUELDO_BASICO: 817500,
+  PRESENTISMO:   159600,
+  VIATICOS:      473800,
+  PLUS_NR:       0,
+  V_HORA:        4924.70,
+  V_HORA_50:     7387.05,
+  V_HORA_100:    9849.40,
+  V_HORA_NOC:    817.50,
   HORAS_EXTRAS_DESDE: 208,
   HORAS_NOC_X_DIA: 9,
   PLUS_ADICIONAL: 0,
@@ -95,7 +92,10 @@ function setScale(key){
   const base = SCALES[key];
   if(!base) return;
   const rates = computeRatesFromBasic(base.SUELDO_BASICO);
-  setConf({ ...base, ...rates, SCALE_KEY: key, USER_OVERRIDE: false });
+  // Al cambiar escala con el selector, no marcamos como override manual.
+  // Solo se marca override al guardar cambios en Opciones Avanzadas.
+  const currentConf = getConf();
+  setConf({ ...base, ...rates, SCALE_KEY: key, USER_OVERRIDE: currentConf.USER_OVERRIDE });
 }
 
 /* === Cálculo principal === */
@@ -119,7 +119,7 @@ function calcularSalario({
   const vHora50Ant  = vHoraAnt * mult50;
   const vHora100Ant = vHoraAnt * mult100;
 
-  // Feriados (12h opción 0: 4 al 100 + 8 normales)
+  // Feriados
   let horasFeriado100 = 0;
   let horasFeriadoNormal = 0;
   if (horasPorDia === 12 && formaPagoFeriado === 0) {
@@ -154,30 +154,21 @@ function calcularSalario({
   let descLegales = remunerativo * 0.17;
   if (sindicato) descLegales += remunerativo * 0.03;
 
-  // APOS 3% sobre NO remunerativo
   const aposDesc = (C.PLUS_NR || 0) * 0.03;
-
   const descuentos = descLegales + aposDesc;
   const neto = bruto - descuentos;
 
-  // Detalle
+  // Detalle (...omitted for brevity, same as original...)
   const hsNoct = diasNocturnos * C.HORAS_NOC_X_DIA;
   const lineasFeriadoHoras =
     (horasPorDia===12 && formaPagoFeriado===0 && diasFeriados>0)
-      ? `- Feriado 100%: ${horasFeriado100} hs
-- Feriado pago normal: ${horasFeriadoNormal} hs
-`
-      : (horasFeriado100>0 ? `- Feriado 100%: ${horasFeriado100} hs
-` : "");
+      ? `- Feriado 100%: ${horasFeriado100} hs\n- Feriado pago normal: ${horasFeriadoNormal} hs\n`
+      : (horasFeriado100>0 ? `- Feriado 100%: ${horasFeriado100} hs\n` : "");
   const lineasFeriadoHaberes =
     (horasPorDia===12 && formaPagoFeriado===0 && diasFeriados>0)
-      ? `${valorFeriado100>0?`- Feriado 100%: ${money(valorFeriado100)}
-`:""}- Feriado pago normal (8h x feriado): ${money(valorFeriadoNormal)}
-`
-      : `${valorFeriado100>0?`- Feriado 100%: ${money(valorFeriado100)}
-`:""}`;
-  const sindicatoLinea = sindicato ? `- Sindicato (3%): ${money(remunerativo*0.03)}
-` : "";
+      ? `${valorFeriado100>0?`- Feriado 100%: ${money(valorFeriado100)}\n`:""}- Feriado pago normal (8h x feriado): ${money(valorFeriadoNormal)}\n`
+      : `${valorFeriado100>0?`- Feriado 100%: ${money(valorFeriado100)}\n`:""}`;
+  const sindicatoLinea = sindicato ? `- Sindicato (3%): ${money(remunerativo*0.03)}\n` : "";
 
   const detalle =
 `DETALLE DE LIQUIDACIÓN
@@ -185,8 +176,7 @@ function calcularSalario({
 HORAS TRABAJADAS:
 - Normales (pool para corte 208): ${horasNormales} hs
 - Extras 50%: ${horasExtras50} hs
-${lineasFeriadoHoras}${hsNoct>0?`- Nocturnas: ${hsNoct} hs
-`:""}
+${lineasFeriadoHoras}${hsNoct>0?`- Nocturnas: ${hsNoct} hs\n`:""}
 TARIFAS APLICADAS (con antigüedad ${aniosAntiguedad} años):
 - Hora normal ajustada: ${money(vHoraAnt)}
 - Hora extra 50% ajustada: ${money(vHora50Ant)}
@@ -197,10 +187,8 @@ HABERES BRUTOS:
 - Presentismo: ${money(C.PRESENTISMO)}
 - Viáticos: ${money(C.VIATICOS)}
 - Plus no remunerativo: ${money(C.PLUS_NR)}
-${C.PLUS_ADICIONAL>0?`- Plus adicional: ${money(C.PLUS_ADICIONAL)}
-`:""}- Extras 50%: ${money(valorExtras50)}
-${lineasFeriadoHaberes}${hsNoct>0?`- Nocturnidad: ${money(nocturnidad)}
-`:""}- Antigüedad: ${money(antiguedad)}
+${C.PLUS_ADICIONAL>0?`- Plus adicional: ${money(C.PLUS_ADICIONAL)}\n`:""}- Extras 50%: ${money(valorExtras50)}
+${lineasFeriadoHaberes}${hsNoct>0?`- Nocturnidad: ${money(nocturnidad)}\n`:""}- Antigüedad: ${money(antiguedad)}
 
 TOTAL BRUTO: ${money(bruto)}
 
@@ -213,71 +201,103 @@ TOTAL DESCUENTOS: ${money(descuentos)}
 
 NETO A COBRAR: ${money(neto)}`;
 
-  return {
-    neto, bruto, descuentos, detalle,
-    horasNormales, horasExtras50, horasFeriado100, horasFeriadoNormal
-  };
+
+  return { neto, bruto, descuentos, detalle };
 }
 
 /* === UI/Flujo === */
 window.addEventListener("DOMContentLoaded", () => {
-  // Si no hay override manual, al abrir toma escala vigente por fecha
-  const C0 = getConf();
-  if (!C0.USER_OVERRIDE) setScale(pickActiveScaleKey(new Date()));
+  const escalaSelInicio = $("#escalaMesInicio");
+  const escalaSelOpc = $("#escalaMes");
 
-  // Modos
+  // --- Lógica del Asistente Virtual ---
+  const overlay = $('#svb-overlay');
+  const closeBtn = $('#svb-close');
+  const frame = $('#svb-frame');
+  const BOT_B64 = "aHR0cHM6Ly9sbG0tY2hhdC1hcHAtdGVtcGxhdGUuc2FuYXZlcmE3OC53b3JrZXJzLmRldi8=";
+  let assistantLoaded = false;
+
+  function ensureAssistantLoaded(){
+    if(assistantLoaded) return;
+    try { frame.src = atob(BOT_B64); assistantLoaded = true; } catch(e) { console.error("Error al cargar el asistente:", e); }
+  }
+  function openAssistant(){
+    ensureAssistantLoaded();
+    overlay.classList.add('show');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeAssistant(){
+    overlay.classList.remove('show');
+    document.body.style.overflow = '';
+  }
+
+  $("#btn-asistente").addEventListener('click', openAssistant);
+  closeBtn.addEventListener('click', closeAssistant);
+  overlay.addEventListener('click', (e) => { if(e.target === overlay) closeAssistant(); });
+
+  // --- Lógica de Escalas Salariales Sincronizadas ---
+  function fillAllScaleOptions(){
+    [escalaSelInicio, escalaSelOpc].forEach(sel => {
+        if (!sel || sel.dataset.inited === "1") return;
+        sel.innerHTML = "";
+        for (const k of SCALE_KEYS){
+          const opt = document.createElement("option");
+          opt.value = k;
+          opt.textContent = SCALES[k].label;
+          sel.appendChild(opt);
+        }
+        sel.dataset.inited = "1";
+    });
+  }
+
+  function syncAllScaleSelections(){
+    const C = getConf();
+    const key = C.SCALE_KEY || pickActiveScaleKey(new Date());
+    if (escalaSelInicio) escalaSelInicio.value = key;
+    if (escalaSelOpc) escalaSelOpc.value = key;
+  }
+
+  function handleScaleChange(e){
+      const newKey = e.target.value;
+      setScale(newKey);
+      syncAllScaleSelections();
+      if ($("#modal-opciones").classList.contains("show")) {
+          fillOpcFields();
+      }
+  }
+
+  fillAllScaleOptions();
+
+  const C0 = getConf();
+  if (!C0.USER_OVERRIDE) {
+    setScale(pickActiveScaleKey(new Date()));
+  }
+  syncAllScaleSelections();
+
+  escalaSelInicio.addEventListener("change", handleScaleChange);
+  escalaSelOpc.addEventListener("change", handleScaleChange);
+
+  // --- Eventos de UI Generales ---
   $("#btn-modo-dias").onclick  = () => { $("#modal-modo").classList.remove("show"); $("#form-dias").classList.remove("hide"); };
   $("#btn-modo-horas").onclick = () => { $("#modal-modo").classList.remove("show"); $("#form-horas").classList.remove("hide"); };
-
-  // Acerca de
   $("#btn-acerca").onclick = () => { $("#modal-acerca").classList.add("show"); };
   $("#btn-cerrar-acerca").onclick = () => { $("#modal-acerca").classList.remove("show"); };
-
-  // Nuevo
   $("#btn-nuevo").onclick = () => location.reload();
 
-  // Noche (modo días)
   $("#turnoNocheDias").addEventListener("change", (e)=>{
     $("#diasNocturnosWrap").classList.toggle("hide", !e.target.checked);
     if(e.target.checked){
       const v = parseInt($("#diasTrabajados").value||"0",10);
-      $("#diasNocturnosDias").value = v>0? v : "";
-    }else{
+      $("#diasNocturnosDias").value = v > 0 ? v : "";
+    } else {
       $("#diasNocturnosDias").value = "";
     }
   });
 
-  /* --- Opciones avanzadas (modal) --- */
-  const escalaSel = $("#escalaMes");
-
-  function fillScaleOptionsOnce(){
-    if (!escalaSel || escalaSel.dataset.inited === "1") return;
-    escalaSel.innerHTML = "";
-    for (const k of SCALE_KEYS){
-      const opt = document.createElement("option");
-      opt.value = k;
-      opt.textContent = SCALES[k].label;
-      escalaSel.appendChild(opt);
-    }
-    escalaSel.dataset.inited = "1";
-  }
-  function syncScaleSelection(){
-    if (!escalaSel) return;
-    const C = getConf();
-    escalaSel.value = C.SCALE_KEY || pickActiveScaleKey(new Date());
-  }
-  function attachScaleListenerOnce(){
-    if (!escalaSel || escalaSel.dataset.listen === "1") return;
-    escalaSel.addEventListener("change", ()=>{
-      setScale(escalaSel.value);
-      fillOpcFields();
-    });
-    escalaSel.dataset.listen = "1";
-  }
-
+  /* --- Opciones avanzadas --- */
   function fillOpcFields(){
     const C = getConf();
-    if (escalaSel) syncScaleSelection();
+    syncAllScaleSelections();
     $("#horasExtrasDesde").value = String(C.HORAS_EXTRAS_DESDE);
     $("#vHora").value     = C.V_HORA;
     $("#vHora50").value   = C.V_HORA_50;
@@ -293,8 +313,6 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 
   const openOpc = ()=>{
-    fillScaleOptionsOnce();
-    attachScaleListenerOnce();
     fillOpcFields();
     $("#modal-opciones").classList.add("show");
   };
@@ -306,6 +324,7 @@ window.addEventListener("DOMContentLoaded", () => {
     resetConf();
     setScale(pickActiveScaleKey(new Date()));
     fillOpcFields();
+    syncAllScaleSelections();
   };
   $("#btn-guardar-opc").onclick = ()=>{
     setConf({
@@ -321,8 +340,10 @@ window.addEventListener("DOMContentLoaded", () => {
       PRESENTISMO:   num($("#presentismo").value, getConf().PRESENTISMO),
       VIATICOS:      num($("#viaticos").value, getConf().VIATICOS),
       HORAS_NOC_X_DIA: parseInt($("#horasNocXD").value||getConf().HORAS_NOC_X_DIA,10),
+      SCALE_KEY: escalaSelOpc.value,
       USER_OVERRIDE: true
     });
+    syncAllScaleSelections();
     $("#modal-opciones").classList.remove("show");
   };
 
@@ -332,10 +353,20 @@ window.addEventListener("DOMContentLoaded", () => {
   $("#btn-detalle-horas").onclick = openDetalle;
   $("#btn-cerrar-detalle").onclick = ()=>$("#modal-detalle").classList.remove("show");
   $("#btn-copiar").onclick = async ()=>{
-    try{ await navigator.clipboard.writeText($("#detalle-pre").textContent); alert("Detalle copiado"); }catch(_){}
+    const btn = $("#btn-copiar");
+    const originalText = btn.textContent;
+    try{
+        await navigator.clipboard.writeText($("#detalle-pre").textContent);
+        btn.textContent = "¡Copiado!";
+    } catch(err) {
+        btn.textContent = "Error al copiar";
+        console.error("Error al copiar:", err);
+    } finally {
+        setTimeout(() => { btn.textContent = originalText; }, 2000);
+    }
   };
 
-  /* --- Calcular (DÍAS) — pool = días*horasDia - (feriados*4) --- */
+  /* --- Calcular (DÍAS) --- */
   $("#btn-calcular-dias").onclick = ()=>{
     const diasTrab = parseInt($("#diasTrabajados").value||"0",10);
     const diasFeri = parseInt($("#diasFeriados").value||"0",10);
@@ -348,15 +379,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     const horasPool = Math.max(0, (diasTrab * horasDia) - (diasFeri * 4));
 
-    const r = calcularSalario({
-      diasFeriados: diasFeri,
-      aniosAntiguedad: aniosAnt,
-      horasPool,
-      diasNocturnos: diasNoc,
-      horasPorDia: horasDia,
-      formaPagoFeriado: formaF,
-      sindicato: sind
-    });
+    const r = calcularSalario({ diasFeriados: diasFeri, aniosAntiguedad: aniosAnt, horasPool, diasNocturnos: diasNoc, horasPorDia: horasDia, formaPagoFeriado: formaF, sindicato: sind });
 
     DETALLE = r.detalle;
     $("#resultado-dias").classList.remove("hide");
@@ -365,7 +388,7 @@ window.addEventListener("DOMContentLoaded", () => {
     $("#alt-dias").textContent   = "Descuentos: " + money(r.descuentos);
   };
 
-  /* --- Calcular (HORAS) — pool = horasTotales - (feriados*4) --- */
+  /* --- Calcular (HORAS) --- */
   $("#btn-calcular-horas").onclick = ()=>{
     const horasTot = parseInt($("#horasTotales").value||"0",10);
     const diasFeri = parseInt($("#diasFeriadosHoras").value||"0",10);
@@ -374,17 +397,8 @@ window.addEventListener("DOMContentLoaded", () => {
     const sind     = $("#sindicatoHoras").checked;
 
     const horasPool = Math.max(0, horasTot - (diasFeri * 4));
-    const horasDia = 12, formaF = 0;
 
-    const r = calcularSalario({
-      diasFeriados: diasFeri,
-      aniosAntiguedad: aniosAnt,
-      horasPool,
-      diasNocturnos: diasNoc,
-      horasPorDia: horasDia,
-      formaPagoFeriado: formaF,
-      sindicato: sind
-    });
+    const r = calcularSalario({ diasFeriados: diasFeri, aniosAntiguedad: aniosAnt, horasPool, diasNocturnos: diasNoc, horasPorDia: 12, formaPagoFeriado: 0, sindicato: sind });
 
     DETALLE = r.detalle;
     $("#resultado-horas").classList.remove("hide");
@@ -393,25 +407,3 @@ window.addEventListener("DOMContentLoaded", () => {
     $("#alt-horas").textContent   = "Descuentos: " + money(r.descuentos);
   };
 });
-
-
-/* ==================================================================================================================
-// // Idea: pausar/reanudar al cambiar de pestaña (descartado)
-// // document.addEventListener("visibilitychange", ()=>{
-// //   if(document.visibilityState === "hidden"){ /* pause */ 
-// //   else { /* play if wasPlaying */ }
-// // });
-
-// // Ensayo: redondeo bancario (no lo usamos al final)
-// // function roundBankers(n){
-// //   const f = Math.floor(n*100);
-// //   const r = n*100 - f;
-// //   if (r === 0.5) return (f % 2 === 0) ? f/100 : (f+1)/100;
-// //   return Math.round(n*100)/100;
-// // }
-
-// // Protoboard: otra fórmula para hora base (descartada por convenio)
-// // function horaBaseAlt(basico){ return basico / 170; }
-
-// // Simulador de feriado alternativo (12h todo al 100) — hoy manejado por formaPagoFeriado=1
-// // function feriado12Completo(dias){ return dias * 12; } */
